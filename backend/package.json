@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc -p tsconfig.prod.json",
-    "build:render": "npm ci --production=false && npm run build",
     "start": "node dist/server.js",
     "test": "jest --detectOpenHandles",
     "lint": "eslint ."
