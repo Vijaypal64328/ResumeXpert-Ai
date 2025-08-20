@@ -9,6 +9,10 @@
     ],
     "compilerOptions": {
         "skipLibCheck": true,
-        "noEmit": false
+        "noEmit": false,
+        "strict": false,
+        "noImplicitAny": false,
+        "typeRoots": ["./node_modules/@types", "./src/types"],
+        "types": ["node", "express", "cors", "multer"]
     }
 }
