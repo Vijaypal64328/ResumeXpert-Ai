@@ -1,12 +1,46 @@
 # ResumeXpert Pro - AI-Powered Career Advancement Platform
 
 [![GitHub](https://img.shields.io/badge/GitHub-ResumeXpert-blue.svg)](https://github.com/Vijaypal64328/ResumeXpert-Ai)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-success.svg)](https://resumexpert-pro.vercel.app)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white)](https://nodejs.org/)
 
+> 🌟 **Live Demo**: [https://resumexpert-pro.vercel.app](https://resumexpert-pro.vercel.app)
+
 An intelligent resume builder and career optimization platform powered by AI, designed to help job seekers create compelling resumes, analyze job compatibility, and enhance their career prospects.
+
+## 🛠️ Built With
+
+### Frontend Technologies
+- **[React 18](https://reactjs.org/)** - Modern UI library for building interactive user interfaces
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript for better development experience
+- **[Vite](https://vitejs.dev/)** - Fast build tool and development server
+- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework for rapid styling
+- **[Lucide React](https://lucide.dev/)** - Beautiful & consistent icon library
+- **[Sonner](https://sonner.emilkowal.ski/)** - Toast notification library
+- **[Firebase Auth](https://firebase.google.com/docs/auth)** - Secure user authentication
+
+### Backend Technologies
+- **[Node.js](https://nodejs.org/)** - JavaScript runtime for server-side development
+- **[Express.js](https://expressjs.com/)** - Fast, minimal web framework
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe server development
+- **[Firebase Admin](https://firebase.google.com/docs/admin/setup)** - Server-side Firebase integration
+- **[Firestore](https://firebase.google.com/docs/firestore)** - NoSQL document database
+- **[Firebase Storage](https://firebase.google.com/docs/storage)** - Cloud file storage
+
+### AI & Document Processing
+- **[Google Generative AI](https://ai.google.dev/)** - Gemini AI for intelligent content generation
+- **[PDF Parse](https://www.npmjs.com/package/pdf-parse)** - PDF document text extraction
+- **[Mammoth.js](https://github.com/mwilliamson/mammoth.js/)** - DOCX to HTML conversion
+- **[PDF-lib](https://pdf-lib.js.org/)** - PDF creation and manipulation
+
+### Development Tools
+- **[ESLint](https://eslint.org/)** - Code linting and quality enforcement
+- **[Prettier](https://prettier.io/)** - Code formatting
+- **[Jest](https://jestjs.io/)** - Testing framework
+- **[Multer](https://github.com/expressjs/multer)** - File upload handling
 
 ## 🚀 Features
 
