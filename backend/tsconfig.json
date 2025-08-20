@@ -19,6 +19,8 @@
     ], /* Specifies which files to include in compilation */
     "exclude": [
         "node_modules",
-        "**/*.spec.ts"
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "src/tests/**/*"
     ] /* Specifies which files to exclude */
 }
