@@ -6,12 +6,11 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "npm install --legacy-peer-deps && tsc -p tsconfig.prod.json",
-    "build:production": "npm ci --only=production && npm install --save-dev typescript @types/express @types/cors @types/multer @types/node && tsc -p tsconfig.prod.json",
+    "build": "tsc -p tsconfig.prod.json",
+    "build:render": "npm ci --production=false && npm run build",
     "start": "node dist/server.js",
     "test": "jest --detectOpenHandles",
-    "lint": "eslint .",
-    "postinstall": "npm run build"
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
