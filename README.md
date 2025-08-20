@@ -330,14 +330,26 @@ npm run lint         # Run ESLint
 
 ## 🚀 Deployment
 
-### Frontend Deployment (Vercel/Netlify)
+### Render Deployment (Recommended - Free Tier Available)
+
+Both frontend and backend can be deployed on Render's free tier. See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed instructions.
+
+**Quick Deployment Steps:**
+1. **Backend**: Deploy as Web Service on Render
+2. **Frontend**: Deploy as Static Site on Render
+3. **Configure**: Set environment variables for both services
+4. **Connect**: Update API URLs and CORS settings
+
+### Alternative Deployment Options
+
+#### Frontend Deployment (Vercel/Netlify)
 ```bash
 cd frontend
 npm run build
 # Deploy the dist/ folder to your hosting provider
 ```
 
-### Backend Deployment (Railway/Heroku/DigitalOcean)
+#### Backend Deployment (Railway/Heroku/DigitalOcean)
 ```bash
 cd backend
 npm run build
