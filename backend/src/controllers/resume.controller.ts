@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { CustomRequest } from '../types/index';
 import { AxiosError } from 'axios';
 
 interface ApiError extends Error {
@@ -38,6 +37,12 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { db } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
 import logger from '../utils/logger';
+import { generateContentWithRetry, tryMultipleModels } from '../utils/aiHelpers';
+import { analyzeResumeAI } from '../utils/highQuotaAI';
+
+interface CustomRequest extends Request {
+    user?: admin.auth.DecodedIdToken;
+}
 
 // const db = admin.firestore(); // Removed: Use imported db
 
@@ -54,7 +59,7 @@ export const uploadResume = async (req: CustomRequest, res: Response): Promise<v
 
         // Check if a file was uploaded by multer
         if (!req.file) {
-            logger.error('[upload]: No file uploaded. Multer req.file is undefined.');
+            console.error('[upload]: No file uploaded. Multer req.file is undefined.');
             res.status(400).json({ message: 'Bad Request: No file uploaded' });
             return;
         }
@@ -62,16 +67,16 @@ export const uploadResume = async (req: CustomRequest, res: Response): Promise<v
         const file = req.file;
         let parsedText = '';
 
-    logger.info(`[upload]: Processing file: ${file.originalname}, Type: ${file.mimetype}, Size: ${file.size} bytes`);
+        console.log(`[upload]: Processing file: ${file.originalname}, Type: ${file.mimetype}, Size: ${file.size} bytes`);
 
         // Parse based on mimetype
         if (file.mimetype === 'application/pdf') {
             try {
                 const data = await pdfParse(file.buffer);
                 parsedText = data.text;
-                logger.info(`[upload]: PDF parsed successfully.`);
+                console.log(`[upload]: PDF parsed successfully.`);
             } catch (pdfErr) {
-                logger.error('[upload]: Error parsing PDF:', pdfErr);
+                console.error('[upload]: Error parsing PDF:', pdfErr);
                 res.status(500).json({ message: 'Error parsing PDF file', error: pdfErr instanceof Error ? pdfErr.message : pdfErr });
                 return;
             }
@@ -79,15 +84,15 @@ export const uploadResume = async (req: CustomRequest, res: Response): Promise<v
             try {
                 const { value } = await mammoth.extractRawText({ buffer: file.buffer });
                 parsedText = value;
-                logger.info(`[upload]: DOCX parsed successfully.`);
+                console.log(`[upload]: DOCX parsed successfully.`);
             } catch (docxErr) {
-                logger.error('[upload]: Error parsing DOCX:', docxErr);
+                console.error('[upload]: Error parsing DOCX:', docxErr);
                 res.status(500).json({ message: 'Error parsing DOCX file', error: docxErr instanceof Error ? docxErr.message : docxErr });
                 return;
             }
         } else {
             // This case should ideally be prevented by multer's fileFilter, but handle defensively
-            logger.error(`[upload]: Unsupported file type: ${file.mimetype}`);
+            console.error(`[upload]: Unsupported file type: ${file.mimetype}`);
             res.status(400).json({ message: 'Unsupported file type' });
             return;
         }
@@ -115,9 +120,9 @@ export const uploadResume = async (req: CustomRequest, res: Response): Promise<v
                 storagePath = `resumes/${userId}/${resumeId}/${Date.now()}_${file.originalname}`;
                 const fileHandle = bucket.file(storagePath);
                 await fileHandle.save(file.buffer, { metadata: { contentType: file.mimetype } });
-                logger.info(`[upload]: Uploaded original file to storage at ${storagePath}`);
+                console.log(`[upload]: Uploaded original file to storage at ${storagePath}`);
             } catch (storageErr) {
-                logger.warn('[upload]: Failed to upload original file to Firebase Storage; continuing without storagePath', storageErr instanceof Error ? storageErr.message : storageErr);
+                console.warn('[upload]: Failed to upload original file to Firebase Storage; continuing without storagePath', storageErr instanceof Error ? storageErr.message : storageErr);
                 storagePath = undefined;
             }
 
@@ -126,17 +131,17 @@ export const uploadResume = async (req: CustomRequest, res: Response): Promise<v
 
             // Persist resume data
             await resumeRef.set(resumeData);
-            logger.info(`[upload]: Resume data saved to Firestore with ID: ${resumeRef.id}`);
+            console.log(`[upload]: Resume data saved to Firestore with ID: ${resumeRef.id}`);
 
             // Respond with the ID of the newly created resume document
             res.status(201).json({ message: 'Resume uploaded and parsed successfully', resumeId: resumeRef.id });
         } catch (dbErr) {
-            logger.error('[upload]: Error saving resume to Firestore:', dbErr);
+            console.error('[upload]: Error saving resume to Firestore:', dbErr);
             res.status(500).json({ message: 'Error saving resume to database', error: dbErr instanceof Error ? dbErr.message : dbErr });
         }
 
     } catch (error: unknown) {
-        logger.error('[upload]: Unexpected error in uploadResume:', error);
+        console.error('[upload]: Unexpected error in uploadResume:', error);
         if (error instanceof Error) {
             res.status(500).json({ message: 'Internal server error during resume processing', error: error.message });
         } else {
@@ -167,8 +172,8 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
 
         const resumeData = resumeDoc.data() as Resume;
 
-    // Debug log for ownership check
-    logger.debug(`[analyze][ownership] resumeData.userId: ${resumeData.userId}, req.user.uid: ${userId}`);
+        // Debug log for ownership check
+        console.log(`[analyze][ownership] resumeData.userId: ${resumeData.userId}, req.user.uid: ${userId}`);
         // Verify ownership, allowing anonymous users to analyze anonymously uploaded resumes
         if (resumeData.userId !== userId && !(resumeData.userId === 'anonymous' && userId === 'anonymous')) {
             res.status(403).json({ message: 'Forbidden: You do not own this resume', resumeUserId: resumeData.userId, requestUserId: userId });
@@ -180,7 +185,7 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
             return;
         }
 
-    logger.info(`[analyze]: Starting analysis for resume: ${resumeId}, User: ${userId}`);
+        console.log(`[analyze]: Starting analysis for resume: ${resumeId}, User: ${userId}`);
 
         // --- Prepare Prompt for Gemini --- (Aligned with frontend ResumeAnalysis interface)
         const prompt = `
@@ -221,15 +226,10 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
             { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
         ];
 
-        const result = await model.generateContent(
-            prompt
-            // Consider passing generationConfig and safetySettings if needed
-            // { generationConfig, safetySettings }
-        );
-        const response = await result.response;
-        const aiTextResponse = response.text();
+        const result = await analyzeResumeAI(prompt);
+        const aiTextResponse = result.response;
 
-    logger.debug(`[analyze]: Received raw response from Gemini for resume ${resumeId}.`);
+        logger.info(`[analyze]: Received raw response from ${result.model} for resume ${resumeId}.`);
 
         // --- Parse Gemini Response --- (Robust parsing needed)
         let analysisResult: ResumeAnalysisResult = {};
@@ -249,9 +249,9 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
 
         } catch (parseError: unknown) {
             if (parseError instanceof Error) {
-                logger.error(`[analyze]: Error parsing Gemini response for resume ${resumeId}:`, parseError.message);
+                console.error(`[analyze]: Error parsing Gemini response for resume ${resumeId}:`, parseError.message);
                 // Log the raw response for debugging
-                logger.error(`[analyze]: Raw AI response: ${aiTextResponse}`);
+                console.error(`[analyze]: Raw AI response: ${aiTextResponse}`);
                 res.status(500).json({ message: 'Failed to parse AI analysis response', error: parseError.message });
                 return;
             }
@@ -354,10 +354,10 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
                 const roleMatchScore = computeRoleMatchScore(roleTitleInput, roleDescInput, resumeData.parsedText || '');
                 // ensure analysisResult is an object and set the field
                 (analysisResult as any).roleMatchScore = roleMatchScore;
-                logger.info(`[analyze]: Computed roleMatchScore=${roleMatchScore} for resume ${resumeId}`);
+                console.log(`[analyze]: Computed roleMatchScore=${roleMatchScore} for resume ${resumeId}`);
             }
         } catch (e) {
-            logger.error('[analyze]: Error computing roleMatchScore:', e);
+            console.error('[analyze]: Error computing roleMatchScore:', e);
         }
 
         // --- Update Firestore --- 
@@ -368,8 +368,8 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
             }
         };
         // Use resumeRef obtained earlier
-    await resumeRef.update(analysisUpdateData);
-    logger.info(`[analyze]: Analysis results updated in Firestore for resume: ${resumeId}`);
+        await resumeRef.update(analysisUpdateData);
+        console.log(`[analyze]: Analysis results updated in Firestore for resume: ${resumeId}`);
 
         
 
@@ -377,7 +377,7 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error(`[analyze]: Error during resume analysis for resume ${req.params.resumeId}:`, error.message);
+            console.error(`[analyze]: Error during resume analysis for resume ${req.params.resumeId}:`, error.message);
             if ((error as ApiError).message.includes('GOOGLE_API_KEY_INVALID')) {
                 res.status(500).json({ message: 'Internal Server Error: Invalid Gemini API Key configured.' });
             } else if ((error as ApiError).code === 'permission-denied' || (error as ApiError).status === 'PERMISSION_DENIED') {
@@ -398,7 +398,7 @@ export const getUploadedResumes = async (req: CustomRequest, res: Response): Pro
         }
         const userId = req.user.uid;
 
-        logger.info(`[getResumes]: Fetching uploaded resumes for user ${userId}`);
+        console.log(`[getResumes]: Fetching uploaded resumes for user ${userId}`);
 
         const resumesSnapshot = await db.collection('resumes')
             .where('userId', '==', userId)
@@ -406,7 +406,7 @@ export const getUploadedResumes = async (req: CustomRequest, res: Response): Pro
             .get();
 
         if (resumesSnapshot.empty) {
-            logger.info(`[getResumes]: No uploaded resumes found for user ${userId}`);
+            console.log(`[getResumes]: No uploaded resumes found for user ${userId}`);
             res.status(200).json({ resumes: [] }); // Return empty array, not an error
             return;
         }
@@ -426,12 +426,12 @@ export const getUploadedResumes = async (req: CustomRequest, res: Response): Pro
             };
         });
 
-        logger.info(`[getResumes]: Found ${resumes.length} uploaded resumes for user ${userId}`);
+        console.log(`[getResumes]: Found ${resumes.length} uploaded resumes for user ${userId}`);
         res.status(200).json({ resumes });
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error(`[getResumes]: Error fetching uploaded resumes for user ${req.user?.uid}:`, error.message);
+            console.error(`[getResumes]: Error fetching uploaded resumes for user ${req.user?.uid}:`, error.message);
             if ((error as ApiError).code === 'permission-denied' || (error as ApiError).status === 'PERMISSION_DENIED') {
                 res.status(500).json({ message: 'Internal Server Error: Firebase permission issue.' });
             } else {
@@ -473,7 +473,7 @@ export const getResumeById = async (req: CustomRequest, res: Response): Promise<
         });
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error('[getResumeById]: Error fetching resume:', error.message);
+            console.error('[getResumeById]: Error fetching resume:', error.message);
             res.status(500).json({ message: 'Internal server error fetching resume', error: error.message });
         }
     }
@@ -508,7 +508,7 @@ export const downloadUploadedResume = async (req: CustomRequest, res: Response):
 
         // Log request for debugging (will appear in server logs)
         const origName = resumeData.originalFilename || '';
-        logger.info(`[downloadUploadedResume] requested by user=${userId} resumeId=${resumeId} originalFilename=${origName}`);
+        console.log(`[downloadUploadedResume] requested by user=${userId} resumeId=${resumeId} originalFilename=${origName}`);
 
         // If original file was stored in Firebase Storage, stream it directly
         if (resumeData.storagePath) {
@@ -529,25 +529,25 @@ export const downloadUploadedResume = async (req: CustomRequest, res: Response):
                     res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
                     res.setHeader('Content-Type', contentType);
                     if (size) res.setHeader('Content-Length', size);
-                    logger.info(`[downloadUploadedResume] streaming stored file ${resumeData.storagePath} (${size || 'unknown'} bytes)`);
+                    console.log(`[downloadUploadedResume] streaming stored file ${resumeData.storagePath} (${size || 'unknown'} bytes)`);
                     const readStream = fileHandle.createReadStream();
                     readStream.on('error', (err) => {
-                        logger.error('[downloadUploadedResume] Error streaming file from storage:', err);
+                        console.error('[downloadUploadedResume] Error streaming file from storage:', err);
                         res.status(500).json({ message: 'Error streaming file from storage', error: (err as Error).message });
                     });
                     readStream.pipe(res);
                     return;
                 } else {
-                    logger.warn(`[downloadUploadedResume] storagePath set but file does not exist: ${resumeData.storagePath}`);
+                    console.warn(`[downloadUploadedResume] storagePath set but file does not exist: ${resumeData.storagePath}`);
                 }
             } catch (streamErr) {
-                logger.error('[downloadUploadedResume] Error accessing storage file:', streamErr instanceof Error ? streamErr.message : streamErr);
+                console.error('[downloadUploadedResume] Error accessing storage file:', streamErr instanceof Error ? streamErr.message : streamErr);
                 // fall back to text reconstruction below
             }
         }
 
         const rawText = (resumeData.parsedText || '').toString();
-        logger.debug(`[downloadUploadedResume] parsedText length=${rawText.length}`);
+        console.log(`[downloadUploadedResume] parsedText length=${rawText.length}`);
 
         // Sanitize text to avoid WinAnsi encoding errors from pdf-lib StandardFonts.
         // Remove C0/C1 control chars except tab/newline/carriage return, then
@@ -557,7 +557,7 @@ export const downloadUploadedResume = async (req: CustomRequest, res: Response):
         let replacedNonLatin1 = 0;
         const sanitized = withoutControls.replace(/[^\u0000-\u00FF]/g, (ch) => { replacedNonLatin1++; return '?'; });
         if (replacedNonLatin1 > 0) {
-            logger.debug(`[downloadUploadedResume] replaced ${replacedNonLatin1} non-Latin1 chars with '?'.`);
+            console.log(`[downloadUploadedResume] replaced ${replacedNonLatin1} non-Latin1 chars with '?'.`);
         }
 
         // Create a simple PDF with sanitized text (fallback if original file not stored)
@@ -601,12 +601,12 @@ export const downloadUploadedResume = async (req: CustomRequest, res: Response):
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Length', String(pdfBytes.length));
-        logger.info(`[downloadUploadedResume] sending PDF (${pdfBytes.length} bytes) as ${safeName}`);
+        console.log(`[downloadUploadedResume] sending PDF (${pdfBytes.length} bytes) as ${safeName}`);
         res.status(200).send(Buffer.from(pdfBytes));
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error('[downloadUploaded]: Error generating PDF:', error.message);
+            console.error('[downloadUploaded]: Error generating PDF:', error.message);
             res.status(500).json({ message: 'Internal server error generating resume PDF', error: error.message });
         }
     }
@@ -642,10 +642,10 @@ export const deleteUploadedResume = async (req: CustomRequest, res: Response): P
         res.status(200).json({ message: 'Resume deleted successfully' });
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error('[deleteUploaded]: Error deleting resume:', error.message);
+            console.error('[deleteUploaded]: Error deleting resume:', error.message);
             res.status(500).json({ message: 'Internal server error deleting resume', error: error.message });
         }
     }
 };
 
-// TODO: Add other resume controller functions later (getResumeById, getAllResumes)
+// TODO: Add other resume controller functions later (getResumeById, getAllResumes) 

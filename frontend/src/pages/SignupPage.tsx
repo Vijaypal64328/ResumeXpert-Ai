@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Quote } from 'lucide-react';
 import { toast } from "sonner";
-import logger from '@/lib/logger';
 import apiClient from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Loader } from '@/components/ui/loader';
@@ -58,7 +57,7 @@ const SignupPage: React.FC = () => {
             navigate('/login');
 
         } catch (error: any) {
-            logger.error("Signup Error:", error);
+            console.error("Signup Error:", error);
             if (error.response && error.response.data && error.response.data.message) {
                 toast.error(`Signup failed: ${error.response.data.message}`);
             } else {
@@ -140,7 +139,7 @@ const SignupPage: React.FC = () => {
                 </div>
 
                 <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-theme-blue to-theme-purple items-center justify-center p-12 text-white flex-col relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 backdrop-blur-sm"></div>
+                    <div className="absolute inset-0 bg-opacity-10 bg-white backdrop-blur-sm"></div>
                     <div className="relative z-10 text-center space-y-6">
                         <Quote className="h-12 w-12 text-cyan-300 mx-auto" strokeWidth={1.5} />
                         <h2 className="text-4xl md:text-5xl font-bold leading-tight">

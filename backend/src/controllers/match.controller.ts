@@ -1,6 +1,15 @@
 import { Request, Response } from 'express';
-import { CustomRequest } from '../types/index';
 import { AxiosError } from 'axios';
+import admin from 'firebase-admin';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { Resume } from '../models/resume.model'; // To potentially fetch resume by ID
+// Import initialized db from config
+import { db } from '../config/firebase.config';
+import logger from '../utils/logger';
+import { generateContentWithRetry, isQuotaExhaustedError, tryMultipleModels } from '../utils/aiHelpers';
+import { matchJobsAI } from '../utils/highQuotaAI';
+import pdfParse from 'pdf-parse'; // For parsing PDF files
+import mammoth from 'mammoth'; // For parsing DOCX files
 
 interface ApiError extends Error {
     code?: string;
@@ -14,14 +23,10 @@ interface AnalysisResult {
     matchedSkills?: string[];
     // Add other properties as they become clear from AI response structure
 }
-import admin from 'firebase-admin';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { Resume } from '../models/resume.model'; // To potentially fetch resume by ID
-// Import initialized db from config
-import { db } from '../config/firebase.config';
-import logger from '../utils/logger';
-import pdfParse from 'pdf-parse'; // For parsing PDF files
-import mammoth from 'mammoth'; // For parsing DOCX files
+
+interface CustomRequest extends Request {
+    user?: admin.auth.DecodedIdToken;
+}
 
 // const db = admin.firestore(); // Removed: Use imported db
 
@@ -150,15 +155,11 @@ export const matchResumeToJob = async (req: CustomRequest, res: Response): Promi
             { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
         ];
 
-    logger.info(`[match]: Sending comparison prompt to Gemini for user ${userId}. Prompt length (approx): ${prompt.length}`);
-        const result = await model.generateContent(
-            prompt,
-            // generationConfig, // Consider re-adding if issues persist with default settings
-            // safetySettings  // Consider re-adding if issues persist with default settings
-        );
-        const response = await result.response;
-        const aiTextResponse = response.text();
-    logger.info(`[match]: Received raw comparison response from Gemini for user ${userId}. Length: ${aiTextResponse.length}`);
+    logger.info(`[match]: Sending comparison prompt to AI for user ${userId}. Prompt length (approx): ${prompt.length}`);
+        
+        const result = await matchJobsAI(prompt);
+        const aiTextResponse = result.response;
+        logger.info(`[match]: Received raw comparison response from ${result.model} for user ${userId}. Length: ${aiTextResponse.length}`);
 
         // --- Parse Gemini Response --- 
         let analysisResult: AnalysisResult = {};
@@ -173,12 +174,12 @@ export const matchResumeToJob = async (req: CustomRequest, res: Response): Promi
                 throw new Error('Failed to parse AI matching response as JSON.');
             }
         } catch (parseError: unknown) {
-                if (parseError instanceof Error) {
+            if (parseError instanceof Error) {
                 logger.error(`[match]: Error parsing Gemini comparison response for user ${userId}:`, parseError.message);
                 logger.error(`[match]: Raw AI comparison response for user ${userId}: ${aiTextResponse}`);
                 res.status(500).json({ message: 'Failed to parse AI matching response', error: parseError.message, rawResponse: aiTextResponse });
+                return;
             }
-            return;
         }
 
         // --- Return Result --- 
@@ -187,14 +188,27 @@ export const matchResumeToJob = async (req: CustomRequest, res: Response): Promi
     } catch (error: unknown) {
         if (error instanceof Error) {
             logger.error("[match]: Resume-Job matching error for user", req.user?.uid, ":", error.message);
-            const err = error as { code?: string; status?: string; message: string };
-            if (err.message && err.message.includes('GOOGLE_API_KEY_INVALID')) {
+            
+            // Handle rate limiting specifically
+            const err = error as { code?: string; status?: number; message: string };
+            if (isQuotaExhaustedError(error)) {
+                res.status(429).json({ 
+                    message: 'AI service quota exceeded. Please try again later or upgrade your plan.' 
+                });
+            } else if (err.status === 429) {
+                res.status(429).json({ 
+                    message: 'AI service is currently rate limited. Please try again in a few moments.' 
+                });
+            } else if (err.message && err.message.includes('GOOGLE_API_KEY_INVALID')) {
                 res.status(500).json({ message: 'Internal Server Error: Invalid Gemini API Key configured.' });
-            } else if (err.code === 'permission-denied' || (err.status && err.status === 'PERMISSION_DENIED')) {
+            } else if (err.code === 'permission-denied' || (err.status && err.status === 403)) {
                 res.status(500).json({ message: 'Internal Server Error: Firebase/Google API permission issue.' });
             } else {
                 res.status(500).json({ message: 'Internal server error during matching', error: err.message });
             }
+        } else {
+            logger.error("[match]: Unknown error during matching for user", req.user?.uid);
+            res.status(500).json({ message: 'Internal server error during matching' });
         }
     }
 }; 

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { CustomRequest } from '../types/index';
 // import admin from 'firebase-admin'; // Keep for FieldValue
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { GeneratedResume, ResumeInputData } from '../models/generated-resume.model';
@@ -8,6 +7,12 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { db } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
 import logger from '../utils/logger';
+import { generateContentWithRetry, tryMultipleModels } from '../utils/aiHelpers';
+import { buildResumeAI } from '../utils/highQuotaAI';
+
+interface CustomRequest extends Request {
+    user?: admin.auth.DecodedIdToken;
+}
 
 // const db = admin.firestore(); // Removed: Use imported db
 
@@ -80,14 +85,10 @@ export const generateResume = async (req: CustomRequest, res: Response): Promise
                 { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
             ];
 
-            logger.info(`[builder]: Sending prompt to Gemini for user: ${userId}`);
-            const result = await model.generateContent(
-                prompt
-                // { generationConfig, safetySettings } // Consider enabling these
-            );
-            const response = await result.response;
-            generatedText = response.text();
-            logger.info(`[builder]: Received generated text from Gemini for user: ${userId}`);
+            logger.info(`[builder]: Sending prompt to AI for user: ${userId}`);
+            const result = await buildResumeAI(prompt);
+            generatedText = result.response;
+            logger.info(`[builder]: Received generated text from ${result.model} for user: ${userId}`);
         }
 
         // --- Save to Firestore --- 
@@ -99,8 +100,8 @@ export const generateResume = async (req: CustomRequest, res: Response): Promise
             createdAt: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp,
         };
 
-    const docRef = await db.collection('generatedResumes').add(generatedResumeData);
-    logger.info(`[builder]: Saved generated resume to Firestore with ID: ${docRef.id} for user: ${userId}`);
+        const docRef = await db.collection('generatedResumes').add(generatedResumeData);
+        logger.info(`[builder]: Saved generated resume to Firestore with ID: ${docRef.id} for user: ${userId}`);
 
         
 
@@ -110,11 +111,21 @@ export const generateResume = async (req: CustomRequest, res: Response): Promise
     } catch (error: unknown) {
         if (error instanceof Error) {
             logger.error("[builder]: Resume generation error:", error.message);
-            if (error.message.includes('GOOGLE_API_KEY_INVALID')) {
+            
+            // Handle rate limiting specifically
+            const err = error as { status?: number; message: string };
+            if (err.status === 429) {
+                res.status(429).json({ 
+                    message: 'AI service is currently rate limited. Please try again in a few moments.' 
+                });
+            } else if (error.message.includes('GOOGLE_API_KEY_INVALID')) {
                 res.status(500).json({ message: 'Internal Server Error: Invalid Gemini API Key configured.' });
             } else {
                 res.status(500).json({ message: 'Internal server error during resume generation', error: error.message });
             }
+        } else {
+            logger.error("[builder]: Unknown error during resume generation");
+            res.status(500).json({ message: 'Internal server error during resume generation' });
         }
     }
 };
@@ -134,7 +145,7 @@ export const downloadGeneratedResume = async (req: CustomRequest, res: Response)
             return;
         }
 
-    logger.info(`[download]: Request to download generated resume ${generatedResumeId} for user ${userId}`);
+        console.log(`[download]: Request to download generated resume ${generatedResumeId} for user ${userId}`);
 
         // Fetch generated resume from Firestore
         const resumeRef = db.collection('generatedResumes').doc(generatedResumeId);
@@ -158,7 +169,7 @@ export const downloadGeneratedResume = async (req: CustomRequest, res: Response)
             return;
         }
 
-    logger.info(`[download]: Generating PDF for generated resume ${generatedResumeId}`);
+        console.log(`[download]: Generating PDF for generated resume ${generatedResumeId}`);
 
         // --- Create PDF using pdf-lib --- 
         const pdfDoc = await PDFDocument.create();
@@ -197,7 +208,7 @@ export const downloadGeneratedResume = async (req: CustomRequest, res: Response)
                     y -= lineHeight; // Move down
                     currentLine = word; // Start new line with the current word
                     if (y < margin) { // Basic check for page overflow (doesn't add new page)
-                        logger.warn(`[download]: PDF content might be truncated for resume ${generatedResumeId}`);
+                        console.warn(`[download]: PDF content might be truncated for resume ${generatedResumeId}`);
                         break; // Stop drawing if out of space
                     }
                 }
@@ -212,13 +223,13 @@ export const downloadGeneratedResume = async (req: CustomRequest, res: Response)
             });
             y -= lineHeight;
             if (y < margin) {
-                logger.warn(`[download]: PDF content might be truncated for resume ${generatedResumeId}`);
+                console.warn(`[download]: PDF content might be truncated for resume ${generatedResumeId}`);
                 break;
             }
         }
 
         const pdfBytes = await pdfDoc.save();
-        logger.info(`[download]: PDF generated successfully for resume ${generatedResumeId}`);
+        console.log(`[download]: PDF generated successfully for resume ${generatedResumeId}`);
 
         // --- Send PDF Response --- 
         res.setHeader('Content-Disposition', `attachment; filename="generated_resume_${generatedResumeId}.pdf"`);
@@ -229,7 +240,7 @@ export const downloadGeneratedResume = async (req: CustomRequest, res: Response)
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error(`[download]: Error generating or downloading PDF for resume ${req.params.generatedResumeId}:`, error.message);
+            console.error(`[download]: Error generating or downloading PDF for resume ${req.params.generatedResumeId}:`, error.message);
             if (!res.headersSent) { // Avoid sending error if response already started
                 if (error.message.includes('GOOGLE_API_KEY_INVALID')) {
                     res.status(500).json({ message: 'Internal Server Error: Invalid Gemini API Key configured.' });
@@ -250,7 +261,7 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
         }
         const userId = req.user.uid;
 
-        logger.info(`[getGenerated]: Fetching generated resumes for user ${userId}`);
+        console.log(`[getGenerated]: Fetching generated resumes for user ${userId}`);
 
         const resumesSnapshot = await db.collection('generatedResumes')
             .where('userId', '==', userId)
@@ -258,7 +269,7 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
             .get();
 
         if (resumesSnapshot.empty) {
-            logger.info(`[getGenerated]: No generated resumes found for user ${userId}`);
+            console.log(`[getGenerated]: No generated resumes found for user ${userId}`);
             res.status(200).json({ generatedResumes: [] }); // Return empty array
             return;
         }
@@ -277,12 +288,12 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
             };
         });
 
-        logger.info(`[getGenerated]: Found ${generatedResumes.length} generated resumes for user ${userId}`);
+        console.log(`[getGenerated]: Found ${generatedResumes.length} generated resumes for user ${userId}`);
         res.status(200).json({ generatedResumes });
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error(`[getGenerated]: Error fetching generated resumes for user ${req.user?.uid}:`, error.message);
+            console.error(`[getGenerated]: Error fetching generated resumes for user ${req.user?.uid}:`, error.message);
             const err = error as { code?: string; status?: string; message: string };
             if (err.code === 'permission-denied' || err.status === 'PERMISSION_DENIED') {
                 res.status(500).json({ message: 'Internal Server Error: Firebase permission issue.' });
@@ -324,7 +335,7 @@ export const deleteGeneratedResume = async (req: CustomRequest, res: Response): 
         res.status(200).json({ message: 'Generated resume deleted successfully' });
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error('[deleteGenerated]: Error deleting generated resume:', error.message);
+            console.error('[deleteGenerated]: Error deleting generated resume:', error.message);
             res.status(500).json({ message: 'Internal server error deleting generated resume', error: error.message });
         }
     }

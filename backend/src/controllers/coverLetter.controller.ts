@@ -1,6 +1,4 @@
 import { Request, Response } from 'express';
-import { CustomRequest } from '../types/index';
-import logger from '../utils/logger';
 
 interface ApiError extends Error {
     code?: string;
@@ -14,11 +12,18 @@ import admin from 'firebase-admin';
 import { db } from '../config/firebase.config'; // Import Firestore instance
 import { Resume } from '../models/resume.model'; // Import Resume interface
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai'; // Import Gemini AI
+import logger from '../utils/logger';
+import { generateContentWithRetry, tryMultipleModels } from '../utils/aiHelpers';
+import { generateCoverLetterAI } from '../utils/highQuotaAI';
 
 // Initialize Google Generative AI
 // Ensure GEMINI_API_KEY is set in your environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use the same model as resume analysis
+
+interface CustomRequest extends Request {
+    user?: admin.auth.DecodedIdToken;
+}
 
 // Controller to handle cover letter generation requests
 export const generateCoverLetterController = async (req: CustomRequest, res: Response): Promise<void> => {
@@ -42,8 +47,8 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
         return;
     }
     
-    logger.info(`[CoverLetterGen] User: ${userId} attempting to generate cover letter.`);
-    logger.info(`[CoverLetterGen] Using Resume ID: ${selectedResume}, Company: ${companyName}, Role: ${roleName}, Template: ${selectedTemplate}`);
+    console.log(`[CoverLetterGen] User: ${userId} attempting to generate cover letter.`);
+    console.log(`[CoverLetterGen] Using Resume ID: ${selectedResume}, Company: ${companyName}, Role: ${roleName}, Template: ${selectedTemplate}`);
 
     try {
         // 1. Fetch resume content based on selectedResume ID and user ID
@@ -51,7 +56,7 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
         const resumeDoc = await resumeRef.get();
 
         if (!resumeDoc.exists) {
-            logger.warn(`[CoverLetterGen] Resume not found: ID ${selectedResume} for user ${userId}`);
+            console.warn(`[CoverLetterGen] Resume not found: ID ${selectedResume} for user ${userId}`);
             res.status(404).json({ message: 'Selected resume not found.' });
             return;
         }
@@ -60,19 +65,19 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
 
         // Verify ownership of the resume
         if (resumeData.userId !== userId) {
-            logger.warn(`[CoverLetterGen] User ${userId} attempted to access unauthorized resume ${selectedResume}`);
+            console.warn(`[CoverLetterGen] User ${userId} attempted to access unauthorized resume ${selectedResume}`);
             res.status(403).json({ message: 'Forbidden: You do not have permission to use this resume.' });
             return;
         }
 
         if (!resumeData.parsedText || resumeData.parsedText.trim() === '') {
-            logger.warn(`[CoverLetterGen] Resume ${selectedResume} has no parsable text for user ${userId}`);
+            console.warn(`[CoverLetterGen] Resume ${selectedResume} has no parsable text for user ${userId}`);
             res.status(400).json({ message: 'Selected resume contains no text to use for generation.' });
             return;
         }
 
         const resumeContent = resumeData.parsedText;
-        logger.info(`[CoverLetterGen] Successfully fetched resume content for ${selectedResume}. Length: ${resumeContent.length}`);
+        console.log(`[CoverLetterGen] Successfully fetched resume content for ${selectedResume}. Length: ${resumeContent.length}`);
 
         // 2. Construct AI prompt using fetched resume, job details, and template
         let templateInstructions = "Write in a standard professional tone.";
@@ -108,7 +113,7 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
           **Generated Cover Letter Text Only:**
         `;
         
-        logger.debug(`[CoverLetterGen] Prompt constructed for Gemini. Template: ${selectedTemplate}`);
+        console.log(`[CoverLetterGen] Prompt constructed for Gemini. Template: ${selectedTemplate}`);
         
         // 3. Call AI service to generate the cover letter
         const generationConfig = {
@@ -124,19 +129,15 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
             { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
         ];
         
-        const result = await model.generateContent(
-            prompt
-            // Pass config if needed: { generationConfig, safetySettings }
-        );
-        const response = await result.response;
-        const generatedCoverLetter = response.text();
+        const result = await generateCoverLetterAI(prompt);
+        const generatedCoverLetter = result.response;
         
         if (!generatedCoverLetter || generatedCoverLetter.trim() === '') {
-            logger.error(`[CoverLetterGen] Gemini returned empty response for user ${userId}, resume ${selectedResume}`);
+            logger.error(`[CoverLetterGen] AI returned empty response for user ${userId}, resume ${selectedResume}`);
             throw new Error('AI generation resulted in an empty cover letter.');
         }
         
-        logger.info(`[CoverLetterGen] Received cover letter from Gemini. Length: ${generatedCoverLetter.length}`);
+        logger.info(`[CoverLetterGen] Received cover letter from ${result.model}. Length: ${generatedCoverLetter.length}`);
         
         // Activity logging and saving removed by request; return generated text only
         res.status(200).json({
@@ -147,7 +148,7 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error(`[CoverLetterGen] Error for user ${req.user?.uid}, resume ${req.body.selectedResume}:`, error.message);
+            console.error(`[CoverLetterGen] Error for user ${req.user?.uid}, resume ${req.body.selectedResume}:`, error.message);
             let errorMessage = 'Failed to generate cover letter due to an internal error.';
             if (error.message.includes('GOOGLE_API_KEY_INVALID') || error.message.includes('API key not valid')) {
                 errorMessage = 'Internal Server Error: Invalid Gemini API Key configured.';
@@ -166,4 +167,4 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
             res.status(500).json({ message: errorMessage });
         }
     }
-};
+}; 
