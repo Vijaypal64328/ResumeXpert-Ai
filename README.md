@@ -1,240 +1,159 @@
-# ResumeXpert AI 🚀
+# ResumeXpert-AI 🚀
 
-An intelligent resume builder powered by Google's Gemini AI that helps you create, analyze, and optimize professional resumes with AI-driven insights.
+ResumeXpert-AI is an innovative AI-powered platform that helps users create, optimize, and manage their professional resumes and cover letters. Built with modern technologies and AI integration, it provides personalized resume building and career advancement tools.
 
-![Banner](frontend/public/screenshots/banner1.png)
+## 🌟 Features
 
-## ✨ Features Showcase
+- **AI-Powered Resume Builder**: Create professional resumes with AI assistance
+- **Smart Resume Analysis**: Get instant feedback and optimization suggestions
+- **Cover Letter Generator**: Generate customized cover letters
+- **Job Matching**: Find relevant job opportunities matching your profile
+- **Real-time Editing**: Live preview and easy-to-use interface
+- **Multiple Templates**: Choose from various professional templates
+- **Export Options**: Download in PDF format
+- **Secure Authentication**: Protected user data and profiles
 
-### 📝 Resume Builder & Analysis
-![Resume Builder](frontend/public/screenshots/Screenshot_16-7-2025_142356_ai-career-forge.vercel.app.jpeg)
-*Smart resume builder with AI-powered suggestions*
+## 🖼️ Screenshots
 
-### 💼 Job Matching System
-![Job Matching](frontend/public/screenshots/Screenshot_16-7-2025_154339_ai-career-forge.vercel.app.jpeg)
-*Intelligent job matching based on your resume*
+### 1. Landing Page
+![Landing Page](screenshots/landingpage.png)
 
-### ✍️ Cover Letter Generation
-![Cover Letter](frontend/public/screenshots/Screenshot_16-7-2025_154059_ai-career-forge.vercel.app.jpeg)
-*AI-powered cover letter customization*
+### 2. Login Page
+![Login Page](screenshots/loginpage.png)
 
-### 📊 Career Dashboard
-![Dashboard](frontend/public/screenshots/Screenshot_16-7-2025_153954_ai-career-forge.vercel.app.jpeg)
-*Comprehensive career management dashboard*
+### 3. Dashboard
+![Dashboard](screenshots/dashboardpage.png)
 
-## ✨ Features
+### 4. Features Page
+![Features Page](screenshots/featurespage.png)
 
-### 🤖 AI-Powered Tools
-- **Resume Analysis** - Get detailed feedback on your resume with scoring and suggestions
-- **Cover Letter Generation** - Create personalized cover letters tailored to job descriptions
-- **Grammar & Content Enhancement** - AI-powered grammar correction and content improvement
-- **Job Matching** - Smart job recommendations based on your resume
+### 5. Resume Builder
+![Resume Builder](screenshots/resumebuilder.png)
 
-### 📋 Resume Builder
-- **Interactive Builder** - Step-by-step resume creation with real-time preview
-- **Multiple Templates** - Professional resume templates for different industries
-- **PDF Export** - Download your resume as a professional PDF
-- **Auto-Save** - Never lose your progress with automatic saving
+### 6. All Resumes
+![All Resumes](screenshots/allresumepage.png)
 
-### 🎯 Smart Features
-- **Multi-Model AI System** - 150 AI requests/day using 3 different Gemini models
-- **Cost Optimization** - Intelligent model selection based on task complexity
-- **Usage Monitoring** - Track your AI usage and get upgrade recommendations
-- **Real-time Collaboration** - Share and collaborate on resumes
+### 7. Resume Analysis
+![Resume Analysis](screenshots/resumeanalysispage.jpeg)
 
-## 🌐 Live Demo
+### 8. Cover Letter Generator
+![Cover Letter Generator](screenshots/coverletterpage.jpeg)
 
-- **Frontend**: [https://resumexpert-ai.onrender.com](https://resumexpert-ai.onrender.com)
-- **Backend API**: [https://resumexpert-ai-backend.onrender.com](https://resumexpert-ai-backend.onrender.com)
-
-## 🛠️ Tech Stack
+## 🛠️ Technologies Used
 
 ### Frontend
-- **React 18** with TypeScript
-- **Vite** for fast development and building
-- **Tailwind CSS** for styling
-- **Radix UI** for accessible components
-- **React Hook Form** for form management
-- **Firebase Auth** for authentication
+- React.js with TypeScript
+- Vite
+- Tailwind CSS
+- Firebase Authentication
+- Material-UI Components
 
 ### Backend
-- **Node.js** with Express.js
-- **TypeScript** for type safety
-- **Google Generative AI** (Gemini) for AI features
-- **Firebase Admin SDK** for authentication & database
-- **Firestore** for data storage
-- **Axios** for HTTP requests
+- Node.js with Express
+- TypeScript
+- Firebase Admin SDK
+- Google Cloud AI/ML
+- Jest for Testing
 
-### AI & Services
-- **Google Gemini 1.5 Flash** - Primary AI model
-- **Google Gemini 1.0 Pro** - Fallback model
-- **Google Gemini 1.5 Pro** - High-complexity tasks
-- **Adzuna API** - Job search integration
-- **PDF Generation** - Resume export functionality
+### Database & Storage
+- Firebase Firestore
+- Firebase Storage
+
+### AI Integration
+- Google Generative AI
+- Natural Language Processing
+- Machine Learning Models
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ and npm
-- Firebase project with Firestore and Authentication
-- Google AI API key (Gemini)
+- Node.js (v16 or higher)
+- npm or yarn
+- Firebase account
+- Google Cloud account for AI services
 
 ### Installation
 
-1. **Clone the repository**
-```bash
+1. Clone the repository
+\`\`\`bash
 git clone https://github.com/Vijaypal64328/ResumeXpert-Ai.git
 cd ResumeXpert-Ai
-```
+\`\`\`
 
-2. **Backend Setup**
-```bash
+2. Install Frontend Dependencies
+\`\`\`bash
+cd frontend
+npm install
+\`\`\`
+
+3. Install Backend Dependencies
+\`\`\`bash
 cd backend
 npm install
-```
+\`\`\`
 
-3. **Configure Environment Variables**
-Create a `.env` file in the backend directory:
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:5173
+4. Set up Environment Variables
 
-# AI Configuration
-GOOGLE_AI_API_KEY=your_gemini_api_key_here
-AI_TIER=free
-ENABLE_MULTI_MODEL=true
-
-# Firebase Configuration
-FIREBASE_SERVICE_ACCOUNT_BASE64=your_base64_encoded_service_account
-# OR
-GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json
-
-# Job API (Optional)
-ADZUNA_APP_ID=your_adzuna_app_id
-ADZUNA_APP_KEY=your_adzuna_app_key
-```
-
-4. **Frontend Setup**
-```bash
-cd ../frontend
-npm install
-```
-
-Create `.env` file in frontend directory:
-```env
+Frontend (.env):
+\`\`\`env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 VITE_API_BASE_URL=http://localhost:3000/api
-```
+\`\`\`
 
-5. **Start Development Servers**
+Backend (.env):
+\`\`\`env
+PORT=3000
+FIREBASE_SERVICE_ACCOUNT_KEY=your_base64_encoded_service_account_key
+\`\`\`
 
-Backend:
-```bash
-cd backend
-npm run dev
-```
+5. Start the Development Servers
 
 Frontend:
-```bash
+\`\`\`bash
 cd frontend
 npm run dev
-```
+\`\`\`
 
-## 📊 AI Usage & Quotas
+Backend:
+\`\`\`bash
+cd backend
+npm run dev
+\`\`\`
 
-### Free Tier (Current)
-- **150 requests/day** across 3 Gemini models
-- **Automatic fallback** when quotas are reached
-- **Smart model selection** based on task complexity
+## 🧪 Testing
 
-### Usage Monitoring
-Check your AI usage at: `GET /api/usage/stats`
+Run backend tests:
+\`\`\`bash
+cd backend
+npm test
+\`\`\`
 
-```json
-{
-  "dailyRequests": 45,
-  "estimatedQuotaUsage": "30% of 150 daily requests",
-  "recommendation": "NORMAL: Current free tier sufficient"
-}
-```
+## 📄 License
 
-## 📡 API Endpoints
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Core Features
-- `POST /api/resumes/analyze/:id` - Analyze resume
-- `POST /api/cover-letter/generate` - Generate cover letter
-- `POST /api/builder/generate` - Generate resume content
-- `POST /api/match/compare` - Job matching
+## 👥 Contributors
 
-### AI Enhancements
-- `POST /api/ai/fix-field` - Grammar correction
-- `POST /api/ai/fix-summary` - Summary enhancement
-- `POST /api/ai/fix-experience` - Experience optimization
-
-### Monitoring
-- `GET /api/usage/stats` - Usage statistics
-- `GET /api/health` - Health check
-
-## 🚀 Deployment
-
-### Render Deployment
-
-Both frontend and backend are configured for Render deployment:
-
-1. **Backend**: Automatically deploys to `resumexpert-ai-backend.onrender.com`
-2. **Frontend**: Automatically deploys to `resumexpert-ai.onrender.com`
-
-#### Environment Variables for Render:
-- `GOOGLE_AI_API_KEY` - Your Gemini API key
-- `FIREBASE_SERVICE_ACCOUNT_BASE64` - Base64 encoded Firebase service account
-- `NODE_ENV=production`
-- `AI_TIER=free`
-
-### Keep-Alive System
-The backend includes automatic keep-alive functionality to prevent Render free tier sleeping:
-- Self-pings every 14 minutes
-- Maintains uptime without manual intervention
-
-## 🔒 Security Features
-
-- **Firebase Authentication** - Secure user management
-- **API Key Protection** - Environment variable configuration
-- **CORS Configuration** - Secure cross-origin requests
-- **Input Validation** - Comprehensive request validation
-- **Rate Limiting** - AI usage monitoring and limits
-
-## 📈 Performance
-
-- **Multi-Model AI** - Optimized for different task complexities
-- **Caching** - Efficient data retrieval
-- **Lazy Loading** - Optimized frontend performance
-- **CDN Ready** - Static asset optimization
+- Vijaypal Singh (@Vijaypal64328)
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (\`git checkout -b feature/AmazingFeature\`)
+3. Commit your changes (\`git commit -m 'Add some AmazingFeature'\`)
+4. Push to the branch (\`git push origin feature/AmazingFeature\`)
 5. Open a Pull Request
 
-## 📝 License
+## 📞 Support
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+For support, email singhvijaypal64328@gmail.com or create an issue in the repository.
 
-## 👨‍💻 Author
+## ⭐ Star this Repository
 
-**Vijaypal Singh**
-- GitHub: [@Vijaypal64328](https://github.com/Vijaypal64328)
-
-## 🙏 Acknowledgments
-
-- Google Generative AI for powerful AI capabilities
-- Firebase for authentication and database services
-- Render for reliable hosting
-- The open-source community for amazing tools and libraries
-
----
-
-**Built with ❤️ using React, Node.js, and Google AI**
+If you find this project useful, please give it a star. It helps others discover this project and motivates me to continue improving it.

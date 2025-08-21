@@ -12,33 +12,29 @@ let auth: admin.auth.Auth;
 try {
     logger.info('[firebase-config]: Attempting Firebase Admin SDK initialization...');
     
-    // Check if already initialized (useful for hot-reloading environments)
+    // Try different service account key sources
+    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+    if (!serviceAccountPath && !serviceAccountBase64) {
+        throw new Error('No Firebase service account credentials found. Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_KEY');
+    }
+
+    // Check if already initialized
     if (admin.apps.length === 0) {
-        // Option 1: Use Base64 encoded service account (preferred for Render)
-        if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-            logger.info('[firebase-config]: Using Base64 service account...');
-            const serviceAccountJson = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
-            const serviceAccount = JSON.parse(serviceAccountJson);
-            
+        if (serviceAccountBase64) {
+            // Use base64 encoded service account
+            const serviceAccount = JSON.parse(Buffer.from(serviceAccountBase64, 'base64').toString());
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount)
             });
-        }
-        // Option 2: Use file path (for local development)
-        else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-            logger.info('[firebase-config]: Using service account file path...');
-            const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-            const resolvedPath = path.resolve(serviceAccountPath);
-            
+        } else {
+            // Use service account file
+            const resolvedPath = path.resolve(serviceAccountPath!);
             admin.initializeApp({
                 credential: admin.credential.cert(resolvedPath)
             });
         }
-        // No credentials found
-        else {
-            throw new Error('Neither FIREBASE_SERVICE_ACCOUNT_BASE64 nor GOOGLE_APPLICATION_CREDENTIALS environment variable is set.');
-        }
-        
         logger.info('[firebase-config]: Firebase Admin SDK initialized successfully.');
     } else {
         logger.info('[firebase-config]: Firebase Admin SDK already initialized.');

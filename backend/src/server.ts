@@ -1,7 +1,6 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import axios from 'axios';
 // Firebase admin import might not be needed here anymore if init is handled elsewhere
 // import admin from 'firebase-admin'; 
 
@@ -50,48 +49,12 @@ app.use('/api/jobs', jobsRoutes); // Use jobs routes
 
 app.use('/api/ai', aiRoutes); // Use AI-powered helpers
 app.use('/api/usage', usageRoutes); // Use usage monitoring routes
-
-// Health check endpoint for Render
-app.get('/api/health', (req: Request, res: Response) => {
-    res.status(200).json({ 
-        status: 'healthy', 
-        timestamp: new Date().toISOString(),
-        service: 'ResumeXpert AI Backend',
-        version: '1.0.0'
-    });
-});
-
-// Keep-alive endpoint for Render free tier (prevents sleeping)
-app.get('/api/keep-alive', (req: Request, res: Response) => {
-    res.status(200).json({ 
-        status: 'alive', 
-        timestamp: new Date().toISOString(),
-        message: 'Server is active'
-    });
-});
-
-// Self-ping to keep Render service active (only in production)
-if (process.env.NODE_ENV === 'production') {
-    const SELF_PING_INTERVAL = 14 * 60 * 1000; // 14 minutes (Render sleeps after 15 minutes)
-    
-    setInterval(async () => {
-        try {
-            const response = await axios.get(`${process.env.RENDER_EXTERNAL_URL || 'https://resumexpert-ai-backend.onrender.com'}/api/keep-alive`);
-            console.log(`[Keep-Alive] Self-ping successful: ${response.status}`);
-        } catch (error) {
-            console.log(`[Keep-Alive] Self-ping failed:`, error);
-        }
-    }, SELF_PING_INTERVAL);
-    
-    console.log(`[Keep-Alive] Self-ping enabled - pinging every ${SELF_PING_INTERVAL / 60000} minutes`);
-}
-
     // Activity routes removed to simplify project (Recent Activity feature removed)
 app.use('/api/dashboard', dashboardRoutes); // Use dashboard routes
 
 // Basic route
 app.get('/', (req: Request, res: Response) => {
-    res.send('ResumeXpert AI Backend is running!');
+    res.send('AI Resume Pro Backend is running!');
 });
 
 // Start the server only if running directly (not imported as a module)

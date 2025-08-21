@@ -24,3 +24,6 @@ dist-ssr
 
 # Environment Variables
 .env*
+
+# Firebase Service Account Key
+backend/serviceAccountKey.json
