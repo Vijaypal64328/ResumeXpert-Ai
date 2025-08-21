@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { CustomRequest } from '../types/index';
 import logger from '../utils/logger';
 
 interface ApiError extends Error {
@@ -18,10 +19,6 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Ensure GEMINI_API_KEY is set in your environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use the same model as resume analysis
-
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
 
 // Controller to handle cover letter generation requests
 export const generateCoverLetterController = async (req: CustomRequest, res: Response): Promise<void> => {

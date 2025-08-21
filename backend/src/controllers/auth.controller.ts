@@ -1,13 +1,9 @@
 import { Request, Response } from 'express';
+import { CustomRequest } from '../types/index';
 // Import initialized services from config
 import { db, auth } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
 import logger from '../utils/logger';
-
-// Define CustomRequest interface
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
 
 // const db = admin.firestore(); // Removed: Use imported db
 

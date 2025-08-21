@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { CustomRequest } from '../types/index';
 import { AxiosError } from 'axios';
 
 interface ApiError extends Error {
@@ -37,10 +38,6 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { db } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
 import logger from '../utils/logger';
-
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
 
 // const db = admin.firestore(); // Removed: Use imported db
 

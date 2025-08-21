@@ -8,7 +8,7 @@ const allowedMimeTypes = [
 ];
 
 // Configure file filter
-const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+const fileFilter = (req: Request, file: any, cb: FileFilterCallback) => {
     if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true); // Accept file
     } else {

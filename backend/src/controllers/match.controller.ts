@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { CustomRequest } from '../types/index';
 import { AxiosError } from 'axios';
 
 interface ApiError extends Error {
@@ -21,10 +22,6 @@ import { db } from '../config/firebase.config';
 import logger from '../utils/logger';
 import pdfParse from 'pdf-parse'; // For parsing PDF files
 import mammoth from 'mammoth'; // For parsing DOCX files
-
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
 
 // const db = admin.firestore(); // Removed: Use imported db
 

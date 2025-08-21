@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { CustomRequest } from '../types/index';
 // import admin from 'firebase-admin'; // Keep for FieldValue
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { GeneratedResume, ResumeInputData } from '../models/generated-resume.model';
@@ -7,10 +8,6 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { db } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
 import logger from '../utils/logger';
-
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
 
 // const db = admin.firestore(); // Removed: Use imported db
 
