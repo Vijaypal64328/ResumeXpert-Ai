@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import logger from '@/lib/logger';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -15,7 +14,7 @@ const Auth = () => {
 
     // Simulate successful login/signup
     // Real implementation would connect to backend or auth provider
-  logger.info((isLogin ? "Login" : "Signup") + " attempted with:", email, password);
+    console.log((isLogin ? "Login" : "Signup") + " attempted with:", email, password);
     // Navigate to dashboard on success
     navigate("/dashboard");
   };

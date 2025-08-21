@@ -136,6 +136,7 @@ export const fixCertificationsGrammar = async (req: Request, res: Response): Pro
 };
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { tryMultipleModels, cleanMarkdownResponse } from '../utils/aiHelpers';
 import logger from '../utils/logger';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');

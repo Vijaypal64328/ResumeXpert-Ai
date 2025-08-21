@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import logger from '../utils/logger';
 
 // Define a simple structure for a tip
 interface Tip {
@@ -49,12 +48,12 @@ export const getTips = async (req: Request, res: Response): Promise<void> => {
         // based on req.user, user profile data, or other context.
         // For now, we just return the mock list.
 
-    logger.info('[tips]: Fetching mock tips.');
+        console.log('[tips]: Fetching mock tips.');
         res.status(200).json({ tips: mockTips });
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            logger.error("[tips]: Error fetching tips:", error.message);
+            console.error("[tips]: Error fetching tips:", error.message);
             res.status(500).json({ message: 'Internal server error fetching tips', error: error.message });
         }
     }

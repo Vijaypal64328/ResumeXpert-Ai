@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogIn, Quote } from 'lucide-react';
 import { toast } from "sonner";
-import logger from '@/lib/logger';
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '@/context/AuthContext';
@@ -47,7 +46,7 @@ const LoginPage: React.FC = () => {
             navigate('/dashboard');
 
         } catch (error: any) {
-            logger.error("Login Error:", error);
+            console.error("Login Error:", error);
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
                 toast.error("Invalid email or password.");
             } else {
@@ -119,7 +118,7 @@ const LoginPage: React.FC = () => {
                                             navigate('/dashboard');
                                         } catch (error: any) {
                                             toast.error("Google login failed. Please try again.");
-                                                                    logger.error("Google Login Error:", error);
+                                            console.error("Google Login Error:", error);
                                         } finally {
                                             setIsLoading(false);
                                         }
@@ -139,7 +138,7 @@ const LoginPage: React.FC = () => {
                 </div>
 
                 <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-theme-blue to-theme-purple items-center justify-center p-12 text-white flex-col relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 backdrop-blur-sm"></div>
+                    <div className="absolute inset-0 bg-opacity-10 bg-white backdrop-blur-sm"></div>
                     <div className="relative z-10 text-center space-y-6">
                         <Quote className="h-12 w-12 text-cyan-300 mx-auto" strokeWidth={1.5} />
                         <h2 className="text-4xl md:text-5xl font-bold leading-tight">

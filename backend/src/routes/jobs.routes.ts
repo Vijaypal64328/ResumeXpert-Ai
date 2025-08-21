@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
 import axios from 'axios';
-import logger from '../utils/logger';
 
 const router = express.Router();
 
@@ -65,9 +64,9 @@ async function fetchAdzunaJobs(query: string, location: string, country: string 
     return { jobs: results.slice(0, targetCount), total: totalCount || results.length };
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      logger.error('Adzuna API error:', err.response?.data || err.message);
+      console.error('Adzuna API error:', err.response?.data || err.message);
     } else {
-      logger.error('Adzuna API error:', (err as Error).message || err);
+      console.error('Adzuna API error:', (err as Error).message || err);
     }
     return { jobs: [], total: 0 };
   }
@@ -91,7 +90,7 @@ async function fetchWorkableJobs(query: string, targetCount = 25): Promise<JobsR
     }));
     return { jobs: jobs.slice(0, targetCount), total: jobs.length };
   } catch (err) {
-  logger.error('Workable fetch error:', err instanceof Error ? err.message : err);
+    console.error('Workable fetch error:', err instanceof Error ? err.message : err);
     return { jobs: [], total: 0 };
   }
 }

@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { db } from '../config/firebase.config';
-import logger from '../utils/logger';
 
 const router = Router();
 
@@ -15,7 +14,7 @@ router.get('/recent', authenticateToken, async (req: Request, res: Response) => 
             return;
         }
         const userId = user.uid;
-    logger.info(`[activity]: GET /recent requested by user: ${userId}`);
+    console.log(`[activity]: GET /recent requested by user: ${userId}`);
 
         // NOTE: composite index would be required for combining where(userId) with orderBy(timestamp).
         // To avoid requiring an index during development, fetch by userId only and sort in memory.
@@ -24,7 +23,7 @@ router.get('/recent', authenticateToken, async (req: Request, res: Response) => 
             .get();
 
         if (activitiesSnapshot.empty) {
-            logger.info(`[activity]: No activities found for user: ${userId}`);
+            console.log(`[activity]: No activities found for user: ${userId}`);
             res.json([]);
             return;
         }
@@ -51,10 +50,10 @@ router.get('/recent', authenticateToken, async (req: Request, res: Response) => 
             };
         });
 
-        logger.info(`[activity]: Returning ${activities.length} activities for user: ${userId} (sorted in-memory)`);
+        console.log(`[activity]: Returning ${activities.length} activities for user: ${userId} (sorted in-memory)`);
         res.json(activities);
     } catch (error) {
-        logger.error('[activity]: Error fetching activities', error);
+        console.error('[activity]: Error fetching activities', error);
         res.status(500).json({ message: 'Error fetching activities' });
     }
 });
@@ -77,13 +76,13 @@ router.get('/debug/my', authenticateToken, async (req: Request, res: Response) =
             return;
         }
         const userId = user.uid;
-        logger.info(`[activity-debug]: GET /debug/my requested by user: ${userId}`);
+        console.log(`[activity-debug]: GET /debug/my requested by user: ${userId}`);
 
         const snapshot = await db.collection('activities').where('userId', '==', userId).limit(200).get();
         const raw = snapshot.docs.map(d => ({ id: d.id, data: d.data() }));
         res.json({ count: raw.length, items: raw });
     } catch (err) {
-        logger.error('[activity-debug]: Error fetching debug activities', err);
+        console.error('[activity-debug]: Error fetching debug activities', err);
         res.status(500).json({ message: 'Error fetching debug activities', error: String(err) });
     }
 });

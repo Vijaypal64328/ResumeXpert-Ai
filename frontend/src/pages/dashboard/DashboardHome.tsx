@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import logger from '@/lib/logger';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { 
@@ -112,7 +111,7 @@ export default function DashboardHome() {
           },
         ]);
       } catch (error) {
-  logger.error('Failed to fetch dashboard stats:', error);
+        console.error('Failed to fetch dashboard stats:', error);
         // Only set mock data if API call fails
         setStatsData([
           { 

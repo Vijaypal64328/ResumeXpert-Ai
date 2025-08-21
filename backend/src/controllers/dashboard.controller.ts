@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import admin from 'firebase-admin';
 import { db } from '../config/firebase.config';
-import logger from '../utils/logger';
 
 // Get dashboard stats for the current user
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
@@ -65,7 +64,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
       coverLetters
     });
   } catch (error) {
-    logger.error('[Dashboard][getDashboardStats] Error:', error);
+    console.error('[Dashboard][getDashboardStats] Error:', error);
     res.status(500).json({ message: 'Failed to fetch dashboard stats.' });
   }
 };

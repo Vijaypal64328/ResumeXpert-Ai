@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, HelpCircle, PlayCircle, CircleDashed, AlertTriangle, ExternalLink } from "lucide-react";
 import apiClient from "@/lib/api";
-import logger from '@/lib/logger';
 import { toast } from "sonner";
 
 interface Tip {
@@ -75,11 +74,11 @@ export default function HelpAndTips() {
         if (response.data && Array.isArray(response.data.tips)) {
           setTips(response.data.tips);
         } else {
-    logger.error("Unexpected tips API response format:", response.data);
+          console.error("Unexpected tips API response format:", response.data);
           setTipsError("Failed to load tips due to unexpected format.");
         }
       } catch (error: any) {
-  logger.error("Error fetching tips:", error);
+        console.error("Error fetching tips:", error);
         const message = error.response?.data?.message || error.message || "An unknown error occurred while fetching tips.";
         setTipsError(message);
       } finally {

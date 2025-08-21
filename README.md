@@ -2,6 +2,26 @@
 
 An intelligent resume builder powered by Google's Gemini AI that helps you create, analyze, and optimize professional resumes with AI-driven insights.
 
+![Banner](frontend/public/screenshots/banner1.png)
+
+## ✨ Features Showcase
+
+### 📝 Resume Builder & Analysis
+![Resume Builder](frontend/public/screenshots/Screenshot_16-7-2025_142356_ai-career-forge.vercel.app.jpeg)
+*Smart resume builder with AI-powered suggestions*
+
+### 💼 Job Matching System
+![Job Matching](frontend/public/screenshots/Screenshot_16-7-2025_154339_ai-career-forge.vercel.app.jpeg)
+*Intelligent job matching based on your resume*
+
+### ✍️ Cover Letter Generation
+![Cover Letter](frontend/public/screenshots/Screenshot_16-7-2025_154059_ai-career-forge.vercel.app.jpeg)
+*AI-powered cover letter customization*
+
+### 📊 Career Dashboard
+![Dashboard](frontend/public/screenshots/Screenshot_16-7-2025_153954_ai-career-forge.vercel.app.jpeg)
+*Comprehensive career management dashboard*
+
 ## ✨ Features
 
 ### 🤖 AI-Powered Tools

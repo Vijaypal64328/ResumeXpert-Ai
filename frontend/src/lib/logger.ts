@@ -9,13 +9,9 @@ export const debug = (...args: any[]) => {
   if (!isProd) console.debug(...args);
 };
 
-export const warn = (...args: any[]) => {
-  if (!isProd) console.warn(...args);
-};
-
 export const error = (...args: any[]) => {
   // Always log errors
   console.error(...args);
 };
 
-export default { info, debug, warn, error };
+export default { info, debug, error };

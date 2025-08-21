@@ -267,7 +267,7 @@ const FindJobsPage = () => {
                           if (fixed && typeof fixed === 'string') setRoleTitle(fixed.trim().slice(0, 60));
                           toast.success('Role title refined');
                         } catch (err) {
-                          logger.error('AI fix failed for role title', err);
+                          console.error('AI fix failed for role title', err);
                           toast.error('AI fix failed for role title');
                         } finally {
                           setIsRoleSuggesting(false);

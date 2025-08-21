@@ -27,7 +27,6 @@ import { motion } from "framer-motion";
 import { Loader } from "@/components/ui/loader";
 import { Badge } from "@/components/ui/badge";
 import apiClient from "@/lib/api";
-import logger from '@/lib/logger';
 
 // Animation variants
 const fadeIn = {
@@ -74,11 +73,11 @@ export default function CoverLetterGenerator() {
         if (response.data && Array.isArray(response.data.resumes)) {
           setResumes(response.data.resumes);
         } else {
-          logger.warn('Unexpected format for resumes:', response.data);
+          console.warn('Unexpected format for resumes:', response.data);
           setResumes([]);
         }
       } catch (err) {
-  logger.error("Error fetching resumes:", err);
+        console.error("Error fetching resumes:", err);
         toast.error("Failed to load your resumes");
         setResumes([]);
       }
@@ -149,7 +148,7 @@ export default function CoverLetterGenerator() {
         throw new Error("Unexpected API response format");
       }
     } catch (err) {
-  logger.error("Error generating cover letter:", err);
+      console.error("Error generating cover letter:", err);
       const errorMessage = err.response?.data?.message || err.message || "Failed to generate cover letter";
       setError(errorMessage);
       toast.error(errorMessage);

@@ -1,7 +1,6 @@
 import request from 'supertest';
 import express from 'express';
 import dotenv from 'dotenv';
-import logger from '../utils/logger';
 
 dotenv.config();
 
@@ -41,7 +40,7 @@ describe('GET / - Basic Server Test', () => {
             const serverModule = await import('../server');
             app = serverModule.default;
         } catch (err) {
-            logger.error("Failed to import server for testing:", err);
+            console.error("Failed to import server for testing:", err);
             throw err;
         }
     });

@@ -105,7 +105,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     // Log errors during request setup
-  logger.error('[API Interceptor] Error attaching token:', error);
+    console.error('[API Interceptor] Error attaching token:', error);
     return Promise.reject(error);
   }
 );
