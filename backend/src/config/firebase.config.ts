@@ -9,17 +9,6 @@ dotenv.config();
 let db: admin.firestore.Firestore;
 let auth: admin.auth.Auth;
 
-import admin from 'firebase-admin';
-import dotenv from 'dotenv';
-import path from 'path';
-import logger from '../utils/logger';
-
-// Ensure env vars are loaded
-dotenv.config();
-
-let db: admin.firestore.Firestore;
-let auth: admin.auth.Auth;
-
 try {
     logger.info('[firebase-config]: Attempting Firebase Admin SDK initialization...');
     
