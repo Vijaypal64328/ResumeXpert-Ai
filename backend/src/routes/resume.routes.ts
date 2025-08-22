@@ -16,7 +16,7 @@ router.get(
 // POST /api/resumes/upload - Upload and parse a resume
 router.post(
     '/upload',
-    authenticateToken,
+    authenticateToken, // Ensure user is authenticated and req.user is set
     upload.single('resumeFile'), // Handle single file upload named 'resumeFile'
     uploadResume // Process the uploaded file
 );
@@ -24,31 +24,30 @@ router.post(
 // POST /api/resumes/:resumeId/analyze - Analyze a specific resume
 router.post(
     '/:resumeId/analyze',
-    authenticateToken,
+    authenticateToken, // Ensure user is authenticated and req.user is set
     analyzeResume // Call the analysis controller function
 );
 
-// GET /api/resumes/:resumeId - Get resume details and analysis if present
+
+// GET /api/resumes/:resumeId - Get a single resume by ID (summary + analysis)
 router.get(
     '/:resumeId',
     authenticateToken,
     getResumeById
 );
 
-// GET /api/resumes/:resumeId/download - Download uploaded resume as PDF
+// GET /api/resumes/:resumeId/download - Download the original or reconstructed resume
 router.get(
     '/:resumeId/download',
     authenticateToken,
     downloadUploadedResume
 );
 
-// DELETE /api/resumes/:resumeId - Delete uploaded resume
+// DELETE /api/resumes/:resumeId - Delete an uploaded resume
 router.delete(
     '/:resumeId',
     authenticateToken,
     deleteUploadedResume
 );
-
-// TODO: Add other resume routes later (e.g., GET /api/resumes/:id)
 
 export default router; 

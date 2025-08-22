@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import AnalyzeResume from "./pages/AnalyzeResume";
 import ResumeBuilder from "./pages/ResumeBuilder";
 import FindJobs from "./pages/FindJobs";
+import MyCoverLetters from "./pages/dashboard/MyCoverLetters";
 import { AnalysisProvider } from "./context/AnalysisContext";
 import NotFound from "./pages/NotFound";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
@@ -81,6 +82,17 @@ const App = () => (
             }
           />
           <Route
+            path="/builder/edit/:id"
+            element={
+              <>
+                <main className="flex-grow">
+                  <ResumeBuilder />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
             path="/find-job"
             element={
               <>
@@ -119,6 +131,7 @@ const App = () => (
           />
 
           {/* Dashboard routes - Protected */}
+              <Route path="my-cover-letters" element={<MyCoverLetters />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<DashboardHome />} />

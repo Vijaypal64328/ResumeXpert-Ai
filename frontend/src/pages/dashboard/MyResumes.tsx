@@ -8,6 +8,8 @@ import { Download, Edit, FileText, MoreHorizontal, Plus, Trash2, CircleDashed, A
 import { toast } from "sonner";
 import apiClient from '@/lib/api';
 import { format } from 'date-fns';
+import CoverLetterList from './CoverLetterList';
+import { Mail } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface UploadedResumeSummary {
@@ -268,7 +270,7 @@ export default function MyResumes() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {uploadedResumes.map((resume) => (
               <Card key={resume.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <CardHeader className="bg-gray-50 pb-4">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 pb-4">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg break-all">
                       {resume.originalFilename || `Resume ${resume.id.substring(0, 6)}`}
@@ -392,6 +394,13 @@ export default function MyResumes() {
         ) : (
           <p className="text-muted-foreground italic">No resumes generated yet.</p>
         )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-xl font-bold mb-4 flex items-center">
+          <Mail className="mr-3 h-6 w-6 text-emerald-500" /> Cover Letters
+        </h2>
+        <CoverLetterList onDelete={() => { /* force re-render if needed */ }} />
       </section>
     </div>
   );

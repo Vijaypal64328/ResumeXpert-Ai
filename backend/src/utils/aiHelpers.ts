@@ -60,7 +60,6 @@ const isQuotaExhaustedError = (error: any): boolean => {
 // Multi-model configuration for automatic fallback
 const FALLBACK_MODELS = [
   'gemini-1.5-flash',
-  'gemini-1.0-pro', 
   'gemini-1.5-pro'
 ];
 

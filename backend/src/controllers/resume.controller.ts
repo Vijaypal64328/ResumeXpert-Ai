@@ -352,19 +352,73 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
             const roleTextCombined = `${roleTitleInput} ${roleDescInput}`.trim();
             if (roleTextCombined) {
                 const roleMatchScore = computeRoleMatchScore(roleTitleInput, roleDescInput, resumeData.parsedText || '');
-                // ensure analysisResult is an object and set the field
                 (analysisResult as any).roleMatchScore = roleMatchScore;
+                (analysisResult as any).roleTitle = roleTitleInput; // Always include roleTitle in response
                 console.log(`[analyze]: Computed roleMatchScore=${roleMatchScore} for resume ${resumeId}`);
             }
+
+            // --- AI-powered Matching/Missing Keywords Logic ---
+            // 1. Use AI to get required keywords for the job role
+            let aiKeywords: string[] = [];
+            try {
+                const aiKeywordPrompt = `Given the following job role and job description, list the most important skills, programming languages, libraries, frameworks, and project types required. Respond with a JSON array of keywords only, no explanations.\n\nJob Role: ${roleTitleInput}\nJob Description: ${roleDescInput}`;
+                const aiKeywordText = await generateContentWithRetry(model, aiKeywordPrompt);
+                const jsonMatch = aiKeywordText.match(/\[.*\]/s);
+                if (jsonMatch && jsonMatch[0]) {
+                    aiKeywords = JSON.parse(jsonMatch[0]);
+                    if (!Array.isArray(aiKeywords)) aiKeywords = [];
+                }
+            } catch (err) {
+                console.error('[analyze]: AI keyword extraction failed:', err);
+            }
+
+            // 2. Extract keywords from all resume data (skills, projects, parsedText)
+            let resumeKeywords: string[] = [];
+            if (Array.isArray((resumeData as any).skills)) {
+                resumeKeywords = resumeKeywords.concat((resumeData as any).skills.map((s: string) => s.toLowerCase()));
+            }
+            if (Array.isArray((resumeData as any).projects)) {
+                for (const proj of (resumeData as any).projects) {
+                    if (Array.isArray(proj.technologies)) {
+                        resumeKeywords = resumeKeywords.concat(proj.technologies.map((t: string) => t.toLowerCase()));
+                    }
+                    // Also include project name and description
+                    if (proj.name) resumeKeywords.push(proj.name.toLowerCase());
+                    if (proj.description) resumeKeywords = resumeKeywords.concat(proj.description.toLowerCase().split(/[^a-zA-Z0-9+#.]+/g));
+                }
+            }
+            // Also extract from parsedText (for fuzzy match)
+            const parsedText = (resumeData as any).parsedText || '';
+            resumeKeywords = resumeKeywords.concat(parsedText.toLowerCase().split(/[^a-zA-Z0-9+#.]+/g));
+            // Remove duplicates and short tokens
+            resumeKeywords = Array.from(new Set(resumeKeywords.filter(k => k.length > 2)));
+            aiKeywords = Array.from(new Set(aiKeywords.map(k => k.toLowerCase()).filter(k => k.length > 2)));
+            // 3. Compute matching/missing
+            const matchingKeywords = aiKeywords.filter(jk => resumeKeywords.includes(jk));
+            const missingKeywords = aiKeywords.filter(jk => !resumeKeywords.includes(jk));
+            (analysisResult as any).matchingKeywords = matchingKeywords;
+            (analysisResult as any).missingKeywords = missingKeywords;
+
+            // --- Improved Role Match Score Calculation ---
+            // If AI keywords are available, use their match ratio for the score
+            if (aiKeywords.length > 0) {
+                const matchRatio = matchingKeywords.length / aiKeywords.length;
+                const aiRoleMatchScore = Math.round(matchRatio * 100);
+                (analysisResult as any).roleMatchScore = aiRoleMatchScore;
+                console.log(`[analyze]: AI-based roleMatchScore=${aiRoleMatchScore} (matched ${matchingKeywords.length} of ${aiKeywords.length} keywords)`);
+            }
         } catch (e) {
-            console.error('[analyze]: Error computing roleMatchScore:', e);
+            console.error('[analyze]: Error computing roleMatchScore or AI keywords:', e);
         }
 
         // --- Update Firestore --- 
+    // No limit: return all suggestions/strengths as received from AI
+        const nowISO = new Date().toISOString();
         const analysisUpdateData = {
             analysis: {
-                ...analysisResult, // Spread the parsed data (now may include roleMatchScore)
-                analysisTimestamp: admin.firestore.FieldValue.serverTimestamp() // Keep admin namespace
+                ...analysisResult,
+                roleTitle: roleTitleInput,
+                analysisTimestamp: nowISO // Always send valid ISO string
             }
         };
         // Use resumeRef obtained earlier
@@ -426,7 +480,11 @@ export const getUploadedResumes = async (req: CustomRequest, res: Response): Pro
             };
         });
 
+        // Debug: Log all resume IDs and filenames
         console.log(`[getResumes]: Found ${resumes.length} uploaded resumes for user ${userId}`);
+        resumes.forEach(r => {
+            console.log(`[getResumes]: Resume ID: ${r.id}, Filename: ${r.originalFilename}, Uploaded: ${r.uploadTimestamp}`);
+        });
         res.status(200).json({ resumes });
 
     } catch (error: unknown) {

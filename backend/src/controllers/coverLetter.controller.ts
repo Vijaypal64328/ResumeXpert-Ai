@@ -1,3 +1,34 @@
+// DELETE /api/cover-letter/:id - Delete a cover letter by ID for the authenticated user
+export const deleteCoverLetter = async (req: CustomRequest, res: Response): Promise<void> => {
+    if (!req.user || !req.user.uid) {
+        res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
+        return;
+    }
+    const userId = req.user.uid;
+    const { id } = req.params;
+    if (!id) {
+        res.status(400).json({ message: 'Missing cover letter ID.' });
+        return;
+    }
+    try {
+        const docRef = db.collection('coverLetters').doc(id);
+        const doc = await docRef.get();
+        if (!doc.exists) {
+            res.status(404).json({ message: 'Cover letter not found.' });
+            return;
+        }
+        const data = doc.data() as CoverLetter;
+        if (data.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not have permission to delete this cover letter.' });
+            return;
+        }
+        await docRef.delete();
+        res.status(200).json({ message: 'Cover letter deleted successfully.' });
+    } catch (error) {
+        logger.error('[deleteCoverLetter] Error deleting cover letter:', error);
+        res.status(500).json({ message: 'Failed to delete cover letter.' });
+    }
+};
 import { Request, Response } from 'express';
 
 interface ApiError extends Error {
@@ -15,6 +46,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import logger from '../utils/logger';
 import { generateContentWithRetry, tryMultipleModels } from '../utils/aiHelpers';
 import { generateCoverLetterAI } from '../utils/highQuotaAI';
+import { CoverLetter } from '../models/coverLetter.model';
 
 // Initialize Google Generative AI
 // Ensure GEMINI_API_KEY is set in your environment variables
@@ -139,13 +171,25 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
         
         logger.info(`[CoverLetterGen] Received cover letter from ${result.model}. Length: ${generatedCoverLetter.length}`);
         
-        // Activity logging and saving removed by request; return generated text only
+        // Save the generated cover letter to Firestore
+        const coverLetterData: Omit<CoverLetter, 'id'> = {
+            userId,
+            resumeId: selectedResume,
+            jobDescription,
+            companyName,
+            roleName,
+            template: selectedTemplate,
+            generatedText: generatedCoverLetter.trim(),
+            createdAt: admin.firestore.FieldValue.serverTimestamp() as FirebaseFirestore.Timestamp,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp() as FirebaseFirestore.Timestamp,
+        };
+        const docRef = await db.collection('coverLetters').add(coverLetterData);
         res.status(200).json({
-            message: "Cover letter generated successfully",
-            generatedCoverLetter: generatedCoverLetter.trim(), // Trim whitespace from AI response
+            message: "Cover letter generated and saved successfully",
+            generatedCoverLetter: generatedCoverLetter.trim(),
+            coverLetterId: docRef.id
         });
         return;
-
     } catch (error: unknown) {
         if (error instanceof Error) {
             console.error(`[CoverLetterGen] Error for user ${req.user?.uid}, resume ${req.body.selectedResume}:`, error.message);
@@ -167,4 +211,22 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
             res.status(500).json({ message: errorMessage });
         }
     }
-}; 
+};
+
+// GET /api/cover-letter - Get all cover letters for the authenticated user
+export const getCoverLettersForUser = async (req: CustomRequest, res: Response): Promise<void> => {
+    if (!req.user || !req.user.uid) {
+        res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
+        return;
+    }
+    const userId = req.user.uid;
+    try {
+        const snapshot = await db.collection('coverLetters').where('userId', '==', userId).orderBy('createdAt', 'desc').get();
+        const coverLetters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        logger.info(`[getCoverLettersForUser] User ${userId} - Found ${coverLetters.length} cover letters.`);
+        res.status(200).json({ coverLetters });
+    } catch (error) {
+        logger.error('[getCoverLettersForUser] Error fetching cover letters:', error);
+        res.status(500).json({ message: 'Failed to fetch cover letters.' });
+    }
+};

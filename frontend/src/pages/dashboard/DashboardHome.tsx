@@ -79,7 +79,7 @@ export default function DashboardHome() {
         setStatsData([
           {
             title: 'Resume Score',
-            value: stats.resumeScore !== null && stats.resumeScore !== undefined ? stats.resumeScore.toString() : '--',
+            value: stats.resumeScore !== null && stats.resumeScore !== undefined ? stats.resumeScore.toString() : '0',
             trend: stats.resumeScoreTrend || '',
             trendUp: stats.resumeScoreTrend ? parseFloat(stats.resumeScoreTrend) >= 0 : undefined,
             description: 'Overall resume quality',
@@ -88,7 +88,7 @@ export default function DashboardHome() {
           },
           {
             title: stats.roleTitle ? `Job Role Match — ${stats.roleTitle.length > 30 ? stats.roleTitle.slice(0, 27) + '…' : stats.roleTitle}` : 'Job Role Match Rate',
-            value: stats.jobMatchRate !== null && stats.jobMatchRate !== undefined ? stats.jobMatchRate.toString() : '--',
+            value: stats.jobMatchRate !== null && stats.jobMatchRate !== undefined ? stats.jobMatchRate.toString() : '0',
             trend: stats.jobMatchRateTrend || '',
             trendUp: stats.jobMatchRateTrend ? parseFloat(stats.jobMatchRateTrend) >= 0 : undefined,
             description: stats.roleTitle ? `Match to role: ${stats.roleTitle}` : 'Match to job postings',
@@ -97,14 +97,14 @@ export default function DashboardHome() {
           },
           {
             title: 'Resumes Created',
-            value: stats.resumesCreated !== null && stats.resumesCreated !== undefined ? stats.resumesCreated.toString() : '--',
+            value: stats.resumesCreated !== null && stats.resumesCreated !== undefined ? stats.resumesCreated.toString() : '0',
             description: 'Total active resumes',
             icon: <FileText className="h-5 w-5 text-violet-500" />, 
             color: 'from-violet-500 to-purple-600'
           },
           {
             title: 'Cover Letters',
-            value: stats.coverLetters !== null && stats.coverLetters !== undefined ? stats.coverLetters.toString() : '--',
+            value: stats.coverLetters !== null && stats.coverLetters !== undefined ? stats.coverLetters.toString() : '0',
             description: 'Generated cover letters',
             icon: <FileEdit className="h-5 w-5 text-amber-500" />, 
             color: 'from-amber-500 to-orange-600'
@@ -231,7 +231,10 @@ export default function DashboardHome() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">{stat.title}</p>
                     <div className="flex items-baseline mt-1">
-                      <h3 className="text-3xl font-bold text-gray-900">{stat.value}{stat.title.includes("Score") || stat.title.includes("Rate") ? "%" : ""}</h3>
+                      <h3 className="text-3xl font-bold text-gray-900">{stat.value}{
+                        // Always show % for job match rate, even if title is customized
+                        (stat.title.startsWith("Job Role Match") || stat.title.includes("Score") || stat.title.includes("Rate")) ? "%" : ""
+                      }</h3>
                       {stat.trend && (
                         <span className={`ml-2 text-sm font-medium ${stat.trendUp ? 'text-emerald-600' : 'text-gray-500'}`}>
                           {stat.trend}

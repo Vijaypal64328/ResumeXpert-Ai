@@ -1,10 +1,23 @@
+
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
-// Import controller
-import { generateResume, downloadGeneratedResume, getGeneratedResumes } from '../controllers/builder.controller';
-import { deleteGeneratedResume } from '../controllers/builder.controller';
+import { generateResume, downloadGeneratedResume, getGeneratedResumes, updateGeneratedResume, deleteGeneratedResume, getGeneratedResumeById } from '../controllers/builder.controller';
 
 const router = Router();
+
+// GET /api/builder/generated/:generatedResumeId - Get a single generated resume for the user
+router.get(
+    '/generated/:generatedResumeId',
+    authenticateToken,
+    getGeneratedResumeById
+);
+
+// PUT /api/builder/generated/:generatedResumeId - Update a generated resume
+router.put(
+    '/generated/:generatedResumeId',
+    authenticateToken,
+    updateGeneratedResume
+);
 
 // GET /api/builder/generated - Get list of generated resumes for the user
 router.get(

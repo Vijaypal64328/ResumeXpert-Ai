@@ -260,7 +260,7 @@ const AnalyzeResume = () => {
               <div className={`w-16 h-0.5 ${uploadedResumeId || analysisResult ? 'bg-blue-500' : 'bg-gray-200'} mx-2`} />
               <div className={`flex flex-col items-center ${analysisResult ? 'opacity-50' : 'opacity-100'}`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${uploadedResumeId && !analysisResult ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-500'}`}>
-                  <BarChart4 size={18} />
+      y            <BarChart4 size={18} />
                 </div>
                 <span className="mt-2 text-sm font-medium">Analyze</span>
               </div>
@@ -490,9 +490,197 @@ const AnalyzeResume = () => {
           {analysisResult && (
             <div className="space-y-10 animate-fade-in">
               {/* Overall Score */}
+              {/* 1. Role Match Results (full width, top as a separate card) */}
+{typeof analysisResult.roleMatchScore === 'number' && (
+  <Card className="overflow-hidden shadow-sm border-blue-100 mb-8">
+    <CardHeader className="pb-2 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+      <CardTitle className="flex items-center gap-2">
+        <Zap className="h-5 w-5 text-blue-500" />
+        Role Match Results
+      </CardTitle>
+      <CardDescription>
+        How well your resume aligns with the job requirements
+      </CardDescription>
+    </CardHeader>
+    <CardContent className="pt-8 pb-10">
+      <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+        <div className="flex gap-6 items-center">
+          {/* Role Match Score circle */}
+          <div className="relative">
+            <div className="w-44 h-44 relative">
+              {/* Background circle */}
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="54"
+                  fill="none"
+                  stroke="#E5E7EB"
+                  strokeWidth="10"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="54"
+                  fill="none"
+                  stroke={
+                    analysisResult.roleMatchScore > 80 ? "#22c55e" :
+                    analysisResult.roleMatchScore > 60 ? "#38bdf8" :
+                    analysisResult.roleMatchScore > 30 ? "#fbbf24" :
+                    "#ef4444"
+                  }
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 54}
+                  strokeDashoffset={2 * Math.PI * 54 * (1 - analysisResult.roleMatchScore / 100)}
+                  className="transition-all duration-1000 ease-out"
+                />
+              </svg>
+              {/* Score text in the center */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={`text-4xl font-bold`} style={{ color: analysisResult.roleMatchScore > 80 ? '#22c55e' : analysisResult.roleMatchScore > 60 ? '#38bdf8' : analysisResult.roleMatchScore > 30 ? '#fbbf24' : '#ef4444' }}>
+                  {analysisResult.roleMatchScore}%
+                </span>
+                <span className="text-sm text-gray-500 mt-1">Role Match</span>
+              </div>
+              {(analysisResult as any).roleTitle && (
+            <div className="mt-3 flex justify-center">
+              <span className="text-base font-medium text-gray-700">{(analysisResult as any).roleTitle}</span>
+            </div>
+          )}
+          
+            </div>
+          </div>
+          {/* Role name below the circle, not inside */}
+          {/* {(analysisResult as any).roleTitle && (
+            <div className="mt-3 flex justify-center">
+              <span className="text-base font-medium text-gray-700">{(analysisResult as any).roleTitle}</span>
+            </div>
+          )} */}
+        </div>
+        {/* Score summary box, right-aligned, with role name */}
+        <div className="w-full mb-8">
+          <h3 className="text-xl font-bold mb-3">Role Match Summary</h3>
+          <div className={`p-4 rounded-lg mb-4 ${
+            analysisResult.roleMatchScore >= 80 ? 'bg-green-50 border border-green-100' :
+            analysisResult.roleMatchScore >= 60 ? 'bg-blue-50 border border-blue-100' :
+            analysisResult.roleMatchScore >= 30 ? 'bg-amber-50 border border-amber-100' :
+            'bg-red-50 border border-red-100'
+          }`}>
+            <div className="flex items-start gap-3">
+              {analysisResult.roleMatchScore >= 80 ? (
+                <CheckCircle2 className="h-6 w-6 text-green-500 mt-0.5" />
+              ) : analysisResult.roleMatchScore >= 60 ? (
+                <CheckCircle2 className="h-6 w-6 text-blue-500 mt-0.5" />
+              ) : analysisResult.roleMatchScore >= 30 ? (
+                <AlertTriangle className="h-6 w-6 text-amber-500 mt-0.5" />
+              ) : (
+                <AlertTriangle className="h-6 w-6 text-red-500 mt-0.5" />
+              )}
+              <div>
+                <p className="font-medium mb-1">
+                  {analysisResult.roleMatchScore >= 80 ? 'Excellent Match!' :
+                  analysisResult.roleMatchScore >= 60 ? 'Good Match' :
+                  analysisResult.roleMatchScore >= 30 ? 'Moderate Match' :
+                  'Low Match'}
+                </p>
+                <p className="text-sm text-gray-700">
+                  {analysisResult.roleMatchScore >= 80 ? 'Your resume is an excellent fit for this role. Keep up the great work and consider adding more recent achievements for even greater impact.' :
+                  analysisResult.roleMatchScore >= 60 ? 'Your resume matches many requirements for this role. Review the missing keywords and try to add more relevant experience or skills.' :
+                  analysisResult.roleMatchScore >= 30 ? 'Your resume matches some requirements, but there is room for improvement. Focus on adding more relevant skills, projects, or experience for this role.' :
+                  'Your resume needs significant improvements to match this role. Review the missing keywords and consider updating your skills, experience, and projects to better align with the job requirements.'}
+                </p>
+                {/* Role name moved below the circle */}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+)}
+
+{/* 2. Matching/Missing Keywords (unchanged) */}
+{analysisResult &&
+  (analysisResult as any).matchingKeywords &&
+  (analysisResult as any).missingKeywords && (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 w-full">
+      {/* Matching Keywords */}
+      <div className="bg-green-50 border border-green-100 rounded-xl p-6">
+        <h4 className="text-lg font-semibold text-green-700 mb-2 flex items-center gap-2">
+          ✓ Matching Keywords
+        </h4>
+        <p className="text-sm text-gray-600 mb-4">
+          Keywords matching in your resume for
+          {(analysisResult as any).roleTitle
+            ? ` "${(analysisResult as any).roleTitle}"`
+            : " this role"}
+        </p>
+        {(analysisResult as any).matchingKeywords.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-24 text-gray-400">
+            <span className="text-2xl mb-2">⚠️</span>
+            <span className="text-sm">
+              No strong keyword matches found.
+              <br />
+              Consider reviewing the job description more carefully.
+            </span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(analysisResult as any).matchingKeywords.map(
+              (kw: string, i: number) => (
+                <span
+                  key={kw + i}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-green-100 text-green-800 border border-green-200"
+                >
+                  {kw}
+                </span>
+              )
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Missing Keywords */}
+      <div className="bg-red-50 border border-red-100 rounded-xl p-6">
+        <h4 className="text-lg font-semibold text-red-700 mb-2 flex items-center gap-2">
+          ✗ Missing Keywords
+        </h4>
+        <p className="text-sm text-gray-600 mb-4">
+          Important keywords for
+          {(analysisResult as any).roleTitle
+            ? ` "${(analysisResult as any).roleTitle}"`
+            : " this role"}{" "}
+          not found in your resume
+        </p>
+        {(analysisResult as any).missingKeywords.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-24 text-gray-400">
+            <span className="text-2xl mb-2">✔️</span>
+            <span className="text-sm">No important keywords missing!</span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(analysisResult as any).missingKeywords.map(
+              (kw: string, i: number) => (
+                <span
+                  key={kw + i}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-red-100 text-red-800 border border-red-200"
+                >
+                  {kw}
+                </span>
+              )
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+
               <Card className="overflow-hidden shadow-sm border-blue-100">
                 <CardHeader className="pb-2 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
                   <CardTitle className="flex items-center gap-2">
+                    
                     <BarChart4 className="h-5 w-5 text-blue-500" />
                     Overall Resume Score
                   </CardTitle>
@@ -540,46 +728,10 @@ const AnalyzeResume = () => {
                           </div>
                         </div>
                       </div>
-
-                      {/* Role Match circle (optional) */}
-                      {typeof analysisResult.roleMatchScore === 'number' && (
-                        <div className="relative">
-                          <div className="w-44 h-44 relative">
-                            <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                              <circle
-                                cx="60"
-                                cy="60"
-                                r="54"
-                                fill="none"
-                                stroke="#E5E7EB"
-                                strokeWidth="10"
-                              />
-                              <circle
-                                cx="60"
-                                cy="60"
-                                r="54"
-                                fill="none"
-                                stroke={analysisResult.roleMatchScore > 80 ? "#4F46E5" : analysisResult.roleMatchScore > 60 ? "#10B981" : "#F97316"}
-                                strokeWidth="10"
-                                strokeLinecap="round"
-                                strokeDasharray={2 * Math.PI * 54}
-                                strokeDashoffset={2 * Math.PI * 54 * (1 - analysisResult.roleMatchScore / 100)}
-                                className="transition-all duration-1000 ease-out"
-                              />
-                            </svg>
-
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <span className={`text-4xl font-bold ${getScoreColor(analysisResult.roleMatchScore)}`}>
-                                {analysisResult.roleMatchScore}%
-                              </span>
-                                    <span className="text-sm text-gray-500 mt-1">Role Match{analysisResult && (analysisResult as any).roleTitle ? ` — ${(analysisResult as any).roleTitle}` : ''}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
 
-                    <div className="max-w-md">
+                    {/* 3. Overall Resume Score Card (full width, below keywords) */}
+                    <div className="w-full mb-8">
                       <h3 className="text-xl font-bold mb-3">Score Summary</h3>
                       <div className={`p-4 rounded-lg mb-4 ${
                         analysisResult.overallScore >= 80 ? 'bg-green-50 border border-green-100' :
@@ -608,14 +760,10 @@ const AnalyzeResume = () => {
                           </div>
                         </div>
                       </div>
-                      
                       <div className="text-sm text-gray-600">
                         <p>Analysis performed {analysisResult.analysisTimestamp ? 
                           new Date(analysisResult.analysisTimestamp).toLocaleString() : 
                           'recently'}</p>
-                        {typeof analysisResult.roleMatchScore === 'number' && (
-                          <p className="mt-2">Role matching: <span className={`${getScoreColor(analysisResult.roleMatchScore)} font-semibold`}>{analysisResult.roleMatchScore}%</span> — this shows how well your resume matches the selected job role.</p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -625,28 +773,28 @@ const AnalyzeResume = () => {
               {/* Category Scores */}
               <div>
                 <h2 className="text-2xl font-semibold mb-5 pl-1 border-l-4 border-blue-500 pl-3">Category Breakdown</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                  <ResumeScoreCard
-                    category="Formatting"
-                    score={analysisResult?.categoryScores?.formatting || 0}
-                    color="#3B82F6" // blue
-                  />
-                  <ResumeScoreCard
-                    category="Content Quality"
-                    score={analysisResult?.categoryScores?.content || 0}
-                    color="#10B981" // green
-                  />
-                  <ResumeScoreCard
-                    category="Keywords"
-                    score={analysisResult?.categoryScores?.keywords || 0}
-                    color="#F97316" // orange
-                  />
-                  <ResumeScoreCard
-                    category="Impact"
-                    score={analysisResult?.categoryScores?.impact || 0}
-                    color="#8B5CF6" // purple
-                  />
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                      <ResumeScoreCard
+                        category="Formatting"
+                        score={analysisResult?.categoryScores?.formatting || 0}
+                        color="#3B82F6" // blue
+                      />
+                      <ResumeScoreCard
+                        category="Content Quality"
+                        score={analysisResult?.categoryScores?.content || 0}
+                        color="#10B981" // green
+                      />
+                      <ResumeScoreCard
+                        category="Keywords"
+                        score={analysisResult?.categoryScores?.keywords || 0}
+                        color="#F97316" // orange
+                      />
+                      <ResumeScoreCard
+                        category="Impact"
+                        score={analysisResult?.categoryScores?.impact || 0}
+                        color="#8B5CF6" // purple
+                      />
+                    </div>
               </div>
 
               {/* Two column layout for suggestions and strengths */}
@@ -667,7 +815,7 @@ const AnalyzeResume = () => {
                     <div className="mb-4 flex flex-wrap gap-2">
                       {(analysisResult?.suggestions && analysisResult.suggestions.length > 0) ? (
                         analysisResult.suggestions.slice(0, 8).map((s, i) => (
-                          <span key={`bad-tag-${i}`} className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-amber-50 text-amber-800 border border-amber-100">
+                          <span key={`bad-tag-${i}`} className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-amber-50 text-amber-800 border border-amber-100 whitespace-normal break-words max-w-xs">
                             {s.length > 40 ? s.slice(0, 38) + '…' : s}
                           </span>
                         ))
@@ -705,7 +853,7 @@ const AnalyzeResume = () => {
                     <div className="mb-4 flex flex-wrap gap-2">
                       {(analysisResult?.strengths && analysisResult.strengths.length > 0) ? (
                         analysisResult.strengths.slice(0, 10).map((st, i) => (
-                          <span key={`strength-tag-${i}`} className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-emerald-50 text-emerald-800 border border-emerald-100">
+                          <span key={`strength-tag-${i}`} className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-emerald-50 text-emerald-800 border border-emerald-100 whitespace-normal break-words max-w-xs">
                             {st.length > 40 ? st.slice(0, 38) + '…' : st}
                           </span>
                         ))

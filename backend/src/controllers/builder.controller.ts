@@ -1,3 +1,86 @@
+// --- Get Single Generated Resume by ID ---
+export const getGeneratedResumeById = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
+        const { generatedResumeId } = req.params;
+        if (!generatedResumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing generatedResumeId parameter' });
+            return;
+        }
+        const resumeRef = db.collection('generatedResumes').doc(generatedResumeId);
+        const resumeDoc = await resumeRef.get();
+        if (!resumeDoc.exists) {
+            res.status(404).json({ message: 'Generated resume not found' });
+            return;
+        }
+        const data = resumeDoc.data() as GeneratedResume;
+        if (data.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this generated resume' });
+            return;
+        }
+        // Return the full generated resume data (including inputData and generatedText)
+        res.status(200).json({
+            id: resumeDoc.id,
+            ...data
+        });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[getGeneratedResumeById]: Error fetching generated resume:', error.message);
+            res.status(500).json({ message: 'Internal server error fetching generated resume', error: error.message });
+        }
+    }
+};
+// --- Update Generated Resume ---
+export const updateGeneratedResume = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
+        const { generatedResumeId } = req.params;
+        if (!generatedResumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing generatedResumeId parameter' });
+            return;
+        }
+        const resumeRef = db.collection('generatedResumes').doc(generatedResumeId);
+        const resumeDoc = await resumeRef.get();
+        if (!resumeDoc.exists) {
+            res.status(404).json({ message: 'Generated resume not found' });
+            return;
+        }
+        const data = resumeDoc.data() as GeneratedResume;
+        if (data.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this generated resume' });
+            return;
+        }
+        // Accept new inputData and generatedText from request body
+        const { inputData, generatedText } = req.body;
+        if (!inputData) {
+            res.status(400).json({ message: 'Bad Request: Missing inputData in request body' });
+            return;
+        }
+        // Increment version and update updatedAt
+        const newVersion = (data.version || 1) + 1;
+        const updatedAt = admin.firestore.FieldValue.serverTimestamp();
+        await resumeRef.update({
+            inputData,
+            generatedText: generatedText || data.generatedText,
+            version: newVersion,
+            updatedAt
+        });
+        res.status(200).json({ message: 'Generated resume updated successfully', version: newVersion, updatedAt });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[updateGeneratedResume]: Error updating generated resume:', error.message);
+            res.status(500).json({ message: 'Internal server error updating generated resume', error: error.message });
+        }
+    }
+};
 import { Request, Response } from 'express';
 // import admin from 'firebase-admin'; // Keep for FieldValue
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';

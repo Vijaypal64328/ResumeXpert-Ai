@@ -26,7 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import { Loader } from "@/components/ui/loader";
 import { Badge } from "@/components/ui/badge";
-import apiClient from "@/lib/api";
+import apiClient, { fixFieldGrammarWithAI } from "@/lib/api";
 
 // Animation variants
 const fadeIn = {
@@ -57,6 +57,48 @@ export default function CoverLetterGenerator() {
   const [jobDescription, setJobDescription] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [roleName, setRoleName] = useState("");
+  const [aiLoading, setAiLoading] = useState<{company?: boolean; role?: boolean; job?: boolean}>({});
+
+  // AI helpers for each field
+  const handleAICorrectCompany = async () => {
+    if (!companyName) return;
+    setAiLoading(l => ({...l, company: true}));
+    try {
+      const fixed = await fixFieldGrammarWithAI("companyName", companyName);
+      setCompanyName(fixed);
+      toast.success("Company name improved by AI");
+    } catch {
+      toast.error("AI failed to improve company name");
+    } finally {
+      setAiLoading(l => ({...l, company: false}));
+    }
+  };
+  const handleAICorrectRole = async () => {
+    if (!roleName) return;
+    setAiLoading(l => ({...l, role: true}));
+    try {
+      const fixed = await fixFieldGrammarWithAI("roleName", roleName);
+      setRoleName(fixed);
+      toast.success("Role/position improved by AI");
+    } catch {
+      toast.error("AI failed to improve role/position");
+    } finally {
+      setAiLoading(l => ({...l, role: false}));
+    }
+  };
+  const handleAICorrectJobDesc = async () => {
+    if (!jobDescription) return;
+    setAiLoading(l => ({...l, job: true}));
+    try {
+      const fixed = await fixFieldGrammarWithAI("jobDescription", jobDescription);
+      setJobDescription(fixed);
+      toast.success("Job description improved by AI");
+    } catch {
+      toast.error("AI failed to improve job description");
+    } finally {
+      setAiLoading(l => ({...l, job: false}));
+    }
+  };
   const [selectedTemplate, setSelectedTemplate] = useState("professional");
   const [isGenerating, setIsGenerating] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
@@ -249,36 +291,63 @@ export default function CoverLetterGenerator() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="company-name" className="text-gray-700">Company Name</Label>
-                      <Input 
-                        id="company-name"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="e.g., Acme Corp"
-                        className="border-gray-300 focus:border-blue-400"
-                      />
+                      <div className="flex gap-2 items-center">
+                        <Input 
+                          id="company-name"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          placeholder="e.g., Acme Corp"
+                          className="border-gray-300 focus:border-blue-400"
+                        />
+                        <Button type="button" size="icon" variant="ghost" onClick={handleAICorrectCompany} disabled={aiLoading.company} title="AI Improve">
+                          <Sparkles className={
+                            aiLoading.company
+                              ? "animate-spin text-sky-400"
+                              : "text-sky-400 hover:text-sky-500"
+                          } />
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role-name" className="text-gray-700">Position/Role</Label>
-                      <Input 
-                        id="role-name"
-                        value={roleName}
-                        onChange={(e) => setRoleName(e.target.value)}
-                        placeholder="e.g., Senior Developer"
-                        className="border-gray-300 focus:border-blue-400"
-                      />
+                      <div className="flex gap-2 items-center">
+                        <Input 
+                          id="role-name"
+                          value={roleName}
+                          onChange={(e) => setRoleName(e.target.value)}
+                          placeholder="e.g., Senior Developer"
+                          className="border-gray-300 focus:border-blue-400"
+                        />
+                        <Button type="button" size="icon" variant="ghost" onClick={handleAICorrectRole} disabled={aiLoading.role} title="AI Improve">
+                          <Sparkles className={
+                            aiLoading.role
+                              ? "animate-spin text-sky-400"
+                              : "text-sky-400 hover:text-sky-500"
+                          } />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="job-description" className="text-gray-700">Job Description</Label>
-                    <Textarea
-                      id="job-description"
-                      value={jobDescription}
-                      onChange={(e) => setJobDescription(e.target.value)}
-                      placeholder="Paste the job description here... The more details you provide, the better the result will be."
-                      rows={8}
-                      className="resize-none border-gray-300 focus:border-blue-400"
-                    />
+                    <div className="flex gap-2 items-start">
+                      <Textarea
+                        id="job-description"
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        placeholder="Paste the job description here... The more details you provide, the better the result will be."
+                        rows={8}
+                        className="resize-none border-gray-300 focus:border-blue-400"
+                      />
+                      <Button type="button" size="icon" variant="ghost" onClick={handleAICorrectJobDesc} disabled={aiLoading.job} title="AI Improve">
+                        <Sparkles className={
+                          aiLoading.job
+                            ? "animate-spin text-sky-400"
+                            : "text-sky-400 hover:text-sky-500"
+                        } />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>

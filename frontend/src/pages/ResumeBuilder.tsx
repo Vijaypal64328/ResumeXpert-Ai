@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import logger from '@/lib/logger';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -196,8 +197,61 @@ const mockResumeData: ResumeInputData = {
 };
 
 const ResumeBuilder = () => {
+  const { id } = useParams(); // for /builder/edit/:id
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("personal");
   const [userInfo, setUserInfo] = useState<ResumeInputData>(initialUserInfo);
+  const [resumeVersion, setResumeVersion] = useState<number | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  // Load generated resume for editing if /builder/edit/:id
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      (async () => {
+        try {
+          const res = await apiClient.get(`/builder/generated/${id}`);
+          if (res.data && res.data.inputData) {
+            setUserInfo(res.data.inputData || initialUserInfo);
+            setResumeVersion(res.data.version || 1);
+            if (res.data.updatedAt?._seconds) {
+              const date = new Date(res.data.updatedAt._seconds * 1000);
+              setUpdatedAt(date.toLocaleString());
+            }
+          } else {
+            toast.error("Failed to load generated resume data.");
+          }
+        } catch (err) {
+          logger.error("Error loading generated resume for edit:", err);
+          toast.error("Error loading generated resume.");
+        }
+      })();
+    }
+  }, [id]);
+  // Save changes to generated resume (PUT)
+  const handleSaveChanges = async () => {
+    if (!id) return;
+    setIsSaving(true);
+    try {
+      const res = await apiClient.put(`/builder/generated/${id}`, { inputData: userInfo });
+      if (res.data && res.data.updatedResume) {
+        setResumeVersion(res.data.updatedResume.version);
+        if (res.data.updatedResume.updatedAt?._seconds) {
+          const date = new Date(res.data.updatedResume.updatedAt._seconds * 1000);
+          setUpdatedAt(date.toLocaleString());
+        }
+        toast.success("Resume updated! Version incremented.");
+      } else {
+        toast.error("Update succeeded but response was unexpected.");
+      }
+    } catch (err) {
+      logger.error("Error updating generated resume:", err);
+      toast.error("Failed to update resume.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
   const [skillInput, setSkillInput] = useState("");
   const [respInput, setRespInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -508,6 +562,13 @@ const ResumeBuilder = () => {
             <p className="text-gray-600 mt-1 sm:mt-2 text-base sm:text-lg">
               Craft your perfect resume with our AI-powered assistant
             </p>
+            {isEditMode && (
+              <div className="mt-2 text-sm text-blue-700">
+                <b>Editing AI-Generated Resume</b>
+                {resumeVersion && <span className="ml-2">Version: <b>{resumeVersion}</b></span>}
+                {updatedAt && <span className="ml-2">Last Updated: <b>{updatedAt}</b></span>}
+              </div>
+            )}
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <Button 
@@ -515,11 +576,12 @@ const ResumeBuilder = () => {
               onClick={handleFillWithMockData} 
               className="bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 text-amber-700 border border-amber-300 text-xs sm:text-sm h-9 sm:h-10"
               size="sm"
+              disabled={isEditMode}
             >
               <TestTube2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               Fill with Example Data
             </Button>
-            {!generatedText && (
+            {!generatedText && !isEditMode && (
               <Button 
                 onClick={generateResumeContent}
                 disabled={isGenerating}
@@ -539,10 +601,29 @@ const ResumeBuilder = () => {
                 )}
               </Button>
             )}
+            {isEditMode && (
+              <Button
+                onClick={handleSaveChanges}
+                disabled={isSaving}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-xs sm:text-sm h-9 sm:h-10"
+                size="sm"
+              >
+                {isSaving ? (
+                  <>
+                    <CircleDashed className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
-        
-        {!generatedText && (
+        {!generatedText && !isEditMode && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
