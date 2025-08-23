@@ -1,3 +1,39 @@
+import { Request, Response } from 'express';
+import { CustomRequest } from '../types/express';
+// import admin from 'firebase-admin'; // Keep for FieldValue
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { GeneratedResume, ResumeInputData } from '../models/generated-resume.model';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+// Import initialized db from config
+import { db } from '../config/firebase.config';
+import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
+import logger from '../utils/logger';
+import { generateContentWithRetry, tryMultipleModels } from '../utils/aiHelpers';
+import { buildResumeAI } from '../utils/highQuotaAI';
+
+
+// const db = admin.firestore(); // Removed: Use imported db
+
+// Re-initialize AI client (Consider centralizing this later)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Old model
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use current recommended model
+
+// Helper function to format input data for the prompt (optional but good practice)
+const formatInputForPrompt = (data: ResumeInputData): string => {
+    let promptData = ``;
+    promptData += `Personal Information:\nName: ${data.personalInfo.name}\nEmail: ${data.personalInfo.email}${data.personalInfo.phone ? `\nPhone: ${data.personalInfo.phone}` : ''}${data.personalInfo.linkedin ? `\nLinkedIn: ${data.personalInfo.linkedin}` : ''}${data.personalInfo.portfolio ? `\nPortfolio: ${data.personalInfo.portfolio}` : ''}${data.personalInfo.address ? `\nAddress: ${data.personalInfo.address}` : ''}\n\n`;
+    if (data.summary) promptData += `Professional Summary:\n${data.summary}\n\n`;
+    promptData += `Education:\n${data.education.map(edu => `- ${edu.degree} ${edu.fieldOfStudy ? `in ${edu.fieldOfStudy} ` : ''}at ${edu.institution}${edu.startDate || edu.endDate ? ` (${edu.startDate || ''} - ${edu.endDate || ''})` : ''}${edu.details ? `\n  Details: ${edu.details.join(', ')}` : ''}`).join('\n')}\n\n`;
+    promptData += `Experience:\n${data.experience.map(exp => `- ${exp.jobTitle} at ${exp.company}${exp.location ? `, ${exp.location}` : ''} (${exp.startDate} - ${exp.endDate})\n  Responsibilities:\n${exp.responsibilities.map(r => `    * ${r}`).join('\n')}`).join('\n\n')}\n\n`;
+    promptData += `Skills:\n${data.skills.map(skillSet => `${skillSet.category ? `${skillSet.category}: ` : ''}${skillSet.items.join(', ')}`).join('\n')}\n\n`;
+    if (data.certifications && data.certifications.length > 0) promptData += `Certifications:\n${data.certifications.map(cert => `- ${cert.name}${cert.issuingOrganization ? ` (${cert.issuingOrganization})` : ''}${cert.dateObtained ? `, ${cert.dateObtained}` : ''}`).join('\n')}\n\n`;
+    if (data.projects && data.projects.length > 0) promptData += `Projects:\n${data.projects.map(proj => `- ${proj.name}: ${proj.description}${proj.technologies ? ` (Tech: ${proj.technologies.join(', ')})` : ''}${proj.link ? ` [${proj.link}]` : ''}`).join('\n')}\n\n`;
+    if (data.targetJobRole) promptData += `Target Job Role: ${data.targetJobRole}\n`;
+    if (data.targetJobDescription) promptData += `Target Job Description:\n${data.targetJobDescription}\n`;
+    return promptData.trim();
+};
+
 // --- Get Single Generated Resume by ID ---
 export const getGeneratedResumeById = async (req: CustomRequest, res: Response): Promise<void> => {
     try {
@@ -80,43 +116,6 @@ export const updateGeneratedResume = async (req: CustomRequest, res: Response): 
             res.status(500).json({ message: 'Internal server error updating generated resume', error: error.message });
         }
     }
-};
-import { Request, Response } from 'express';
-// import admin from 'firebase-admin'; // Keep for FieldValue
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { GeneratedResume, ResumeInputData } from '../models/generated-resume.model';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-// Import initialized db from config
-import { db } from '../config/firebase.config';
-import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
-import logger from '../utils/logger';
-import { generateContentWithRetry, tryMultipleModels } from '../utils/aiHelpers';
-import { buildResumeAI } from '../utils/highQuotaAI';
-
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
-
-// const db = admin.firestore(); // Removed: Use imported db
-
-// Re-initialize AI client (Consider centralizing this later)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Old model
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use current recommended model
-
-// Helper function to format input data for the prompt (optional but good practice)
-const formatInputForPrompt = (data: ResumeInputData): string => {
-    let promptData = ``;
-    promptData += `Personal Information:\nName: ${data.personalInfo.name}\nEmail: ${data.personalInfo.email}${data.personalInfo.phone ? `\nPhone: ${data.personalInfo.phone}` : ''}${data.personalInfo.linkedin ? `\nLinkedIn: ${data.personalInfo.linkedin}` : ''}${data.personalInfo.portfolio ? `\nPortfolio: ${data.personalInfo.portfolio}` : ''}${data.personalInfo.address ? `\nAddress: ${data.personalInfo.address}` : ''}\n\n`;
-    if (data.summary) promptData += `Professional Summary:\n${data.summary}\n\n`;
-    promptData += `Education:\n${data.education.map(edu => `- ${edu.degree} ${edu.fieldOfStudy ? `in ${edu.fieldOfStudy} ` : ''}at ${edu.institution}${edu.startDate || edu.endDate ? ` (${edu.startDate || ''} - ${edu.endDate || ''})` : ''}${edu.details ? `\n  Details: ${edu.details.join(', ')}` : ''}`).join('\n')}\n\n`;
-    promptData += `Experience:\n${data.experience.map(exp => `- ${exp.jobTitle} at ${exp.company}${exp.location ? `, ${exp.location}` : ''} (${exp.startDate} - ${exp.endDate})\n  Responsibilities:\n${exp.responsibilities.map(r => `    * ${r}`).join('\n')}`).join('\n\n')}\n\n`;
-    promptData += `Skills:\n${data.skills.map(skillSet => `${skillSet.category ? `${skillSet.category}: ` : ''}${skillSet.items.join(', ')}`).join('\n')}\n\n`;
-    if (data.certifications && data.certifications.length > 0) promptData += `Certifications:\n${data.certifications.map(cert => `- ${cert.name}${cert.issuingOrganization ? ` (${cert.issuingOrganization})` : ''}${cert.dateObtained ? `, ${cert.dateObtained}` : ''}`).join('\n')}\n\n`;
-    if (data.projects && data.projects.length > 0) promptData += `Projects:\n${data.projects.map(proj => `- ${proj.name}: ${proj.description}${proj.technologies ? ` (Tech: ${proj.technologies.join(', ')})` : ''}${proj.link ? ` [${proj.link}]` : ''}`).join('\n')}\n\n`;
-    if (data.targetJobRole) promptData += `Target Job Role: ${data.targetJobRole}\n`;
-    if (data.targetJobDescription) promptData += `Target Job Description:\n${data.targetJobDescription}\n`;
-    return promptData.trim();
 };
 
 export const generateResume = async (req: CustomRequest, res: Response): Promise<void> => {

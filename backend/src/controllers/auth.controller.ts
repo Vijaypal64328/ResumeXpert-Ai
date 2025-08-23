@@ -2,11 +2,7 @@ import { Request, Response } from 'express';
 // Import initialized services from config
 import { db, auth } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
-
-// Define CustomRequest interface
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
+import { CustomRequest } from '../types/express';
 
 // const db = admin.firestore(); // Removed: Use imported db
 
@@ -67,4 +63,4 @@ export const login = async (req: CustomRequest, res: Response): Promise<void> =>
     console.warn("[auth]: /login endpoint hit - usually not needed with Firebase client-side auth.");
     res.status(501).json({ message: 'Login endpoint not typically implemented for Firebase Auth; verify ID token instead.' });
     // No try/catch needed for this simple placeholder
-}; 
+};

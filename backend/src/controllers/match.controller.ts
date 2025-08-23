@@ -10,6 +10,7 @@ import { generateContentWithRetry, isQuotaExhaustedError, tryMultipleModels } fr
 import { matchJobsAI } from '../utils/highQuotaAI';
 import pdfParse from 'pdf-parse'; // For parsing PDF files
 import mammoth from 'mammoth'; // For parsing DOCX files
+import { CustomRequest } from '../types/express';
 
 interface ApiError extends Error {
     code?: string;
@@ -24,9 +25,6 @@ interface AnalysisResult {
     // Add other properties as they become clear from AI response structure
 }
 
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
 
 // const db = admin.firestore(); // Removed: Use imported db
 
@@ -211,4 +209,4 @@ export const matchResumeToJob = async (req: CustomRequest, res: Response): Promi
             res.status(500).json({ message: 'Internal server error during matching' });
         }
     }
-}; 
+};

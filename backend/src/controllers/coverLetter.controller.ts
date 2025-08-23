@@ -1,35 +1,5 @@
-// DELETE /api/cover-letter/:id - Delete a cover letter by ID for the authenticated user
-export const deleteCoverLetter = async (req: CustomRequest, res: Response): Promise<void> => {
-    if (!req.user || !req.user.uid) {
-        res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
-        return;
-    }
-    const userId = req.user.uid;
-    const { id } = req.params;
-    if (!id) {
-        res.status(400).json({ message: 'Missing cover letter ID.' });
-        return;
-    }
-    try {
-        const docRef = db.collection('coverLetters').doc(id);
-        const doc = await docRef.get();
-        if (!doc.exists) {
-            res.status(404).json({ message: 'Cover letter not found.' });
-            return;
-        }
-        const data = doc.data() as CoverLetter;
-        if (data.userId !== userId) {
-            res.status(403).json({ message: 'Forbidden: You do not have permission to delete this cover letter.' });
-            return;
-        }
-        await docRef.delete();
-        res.status(200).json({ message: 'Cover letter deleted successfully.' });
-    } catch (error) {
-        logger.error('[deleteCoverLetter] Error deleting cover letter:', error);
-        res.status(500).json({ message: 'Failed to delete cover letter.' });
-    }
-};
 import { Request, Response } from 'express';
+import { CustomRequest } from '../types/express';
 
 interface ApiError extends Error {
     code?: string;
@@ -53,9 +23,6 @@ import { CoverLetter } from '../models/coverLetter.model';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use the same model as resume analysis
 
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
 
 // Controller to handle cover letter generation requests
 export const generateCoverLetterController = async (req: CustomRequest, res: Response): Promise<void> => {
@@ -210,6 +177,38 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
             }
             res.status(500).json({ message: errorMessage });
         }
+    }
+};
+
+// DELETE /api/cover-letter/:id - Delete a cover letter by ID for the authenticated user
+export const deleteCoverLetter = async (req: CustomRequest, res: Response): Promise<void> => {
+    if (!req.user || !req.user.uid) {
+        res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
+        return;
+    }
+    const userId = req.user.uid;
+    const { id } = req.params;
+    if (!id) {
+        res.status(400).json({ message: 'Missing cover letter ID.' });
+        return;
+    }
+    try {
+        const docRef = db.collection('coverLetters').doc(id);
+        const doc = await docRef.get();
+        if (!doc.exists) {
+            res.status(404).json({ message: 'Cover letter not found.' });
+            return;
+        }
+        const data = doc.data() as CoverLetter;
+        if (data.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not have permission to delete this cover letter.' });
+            return;
+        }
+        await docRef.delete();
+        res.status(200).json({ message: 'Cover letter deleted successfully.' });
+    } catch (error) {
+        logger.error('[deleteCoverLetter] Error deleting cover letter:', error);
+        res.status(500).json({ message: 'Failed to delete cover letter.' });
     }
 };
 
