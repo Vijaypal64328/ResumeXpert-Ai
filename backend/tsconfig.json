@@ -18,6 +18,7 @@
         "src/**/*"
     ], /* Specifies which files to include in compilation */
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "tests"
     ] /* Specifies which files to exclude */
 }
