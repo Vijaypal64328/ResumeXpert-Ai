@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { CustomRequest } from '../types/express';
 // import admin from 'firebase-admin'; // Keep for FieldValue
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { GeneratedResume, ResumeInputData } from '../models/generated-resume.model';
@@ -35,7 +34,7 @@ const formatInputForPrompt = (data: ResumeInputData): string => {
 };
 
 // --- Get Single Generated Resume by ID ---
-export const getGeneratedResumeById = async (req: CustomRequest, res: Response): Promise<void> => {
+export const getGeneratedResumeById = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });
@@ -71,7 +70,7 @@ export const getGeneratedResumeById = async (req: CustomRequest, res: Response):
     }
 };
 // --- Update Generated Resume ---
-export const updateGeneratedResume = async (req: CustomRequest, res: Response): Promise<void> => {
+export const updateGeneratedResume = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });
@@ -118,7 +117,7 @@ export const updateGeneratedResume = async (req: CustomRequest, res: Response): 
     }
 };
 
-export const generateResume = async (req: CustomRequest, res: Response): Promise<void> => {
+export const generateResume = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });
@@ -213,7 +212,7 @@ export const generateResume = async (req: CustomRequest, res: Response): Promise
 };
 
 // --- Download Generated Resume Function ---
-export const downloadGeneratedResume = async (req: CustomRequest, res: Response): Promise<void> => {
+export const downloadGeneratedResume = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });
@@ -335,7 +334,7 @@ export const downloadGeneratedResume = async (req: CustomRequest, res: Response)
 };
 
 // --- Get Generated Resumes Function ---
-export const getGeneratedResumes = async (req: CustomRequest, res: Response): Promise<void> => {
+export const getGeneratedResumes = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });
@@ -387,7 +386,7 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
 }; 
 
 // --- Delete Generated Resume ---
-export const deleteGeneratedResume = async (req: CustomRequest, res: Response): Promise<void> => {
+export const deleteGeneratedResume = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });

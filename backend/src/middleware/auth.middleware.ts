@@ -1,10 +1,9 @@
 import { Request as ExpressRequest, Response, NextFunction } from 'express';
 import admin from 'firebase-admin';
-import { CustomRequest } from '../types/express';
 
 
-export const authenticateToken = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
-    const authHeader = req.headers.authorization;
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const authHeader = (req.headers as any)['authorization'] as string | undefined;
     const token = authHeader?.split(' ')[1]; // Expecting "Bearer <token>"
 
     if (!token) {
@@ -14,7 +13,7 @@ export const authenticateToken = async (req: CustomRequest, res: Response, next:
 
     try {
         const decodedToken = await admin.auth().verifyIdToken(token);
-        req.user = decodedToken; // Attach decoded user info to the request object
+    (req as any).user = decodedToken; // Attach decoded user info to the request object
         console.log(`[auth]: User authenticated: ${decodedToken.uid}`);
         next(); // Proceed to the next middleware or route handler
     } catch (error: unknown) {
