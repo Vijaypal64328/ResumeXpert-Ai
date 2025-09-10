@@ -42,9 +42,6 @@ try {
                 jsonText = jsonText.slice(1, -1);
             }
 
-            // Replace common escaped newline patterns
-            jsonText = jsonText.replace(/\\n/g, '\n');
-
             // Try parsing; if it parses to a string that looks like JSON, parse again
             let serviceAccount: any;
             try {
@@ -56,6 +53,11 @@ try {
                 }
             } catch (e) {
                 throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY JSON. Ensure it is valid JSON or base64 of JSON. Error: ${(e as Error).message}`);
+            }
+
+            // Normalize private_key newlines AFTER parsing (Firebase expects real newlines)
+            if (serviceAccount && typeof serviceAccount === 'object' && typeof serviceAccount.private_key === 'string') {
+                serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
             }
 
             admin.initializeApp({
