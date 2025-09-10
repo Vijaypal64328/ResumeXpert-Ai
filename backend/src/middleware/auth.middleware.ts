@@ -1,9 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request as ExpressRequest, Response, NextFunction } from 'express';
 import admin from 'firebase-admin';
 
+// Extend Express Request interface to include 'user' property
+interface CustomRequest extends ExpressRequest {
+    user?: admin.auth.DecodedIdToken;
+}
 
-
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const authenticateToken = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(' ')[1]; // Expecting "Bearer <token>"
 

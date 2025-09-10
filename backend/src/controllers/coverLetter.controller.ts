@@ -1,5 +1,5 @@
 // DELETE /api/cover-letter/:id - Delete a cover letter by ID for the authenticated user
-export const deleteCoverLetter = async (req: Request, res: Response): Promise<void> => {
+export const deleteCoverLetter = async (req: CustomRequest, res: Response): Promise<void> => {
     if (!req.user || !req.user.uid) {
         res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
         return;
@@ -53,10 +53,12 @@ import { CoverLetter } from '../models/coverLetter.model';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use the same model as resume analysis
 
-
+interface CustomRequest extends Request {
+    user?: admin.auth.DecodedIdToken;
+}
 
 // Controller to handle cover letter generation requests
-export const generateCoverLetterController = async (req: Request, res: Response): Promise<void> => {
+export const generateCoverLetterController = async (req: CustomRequest, res: Response): Promise<void> => {
     // Ensure user is authenticated (middleware should have already done this)
     if (!req.user || !req.user.uid) {
         res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
@@ -212,7 +214,7 @@ export const generateCoverLetterController = async (req: Request, res: Response)
 };
 
 // GET /api/cover-letter - Get all cover letters for the authenticated user
-export const getCoverLettersForUser = async (req: Request, res: Response): Promise<void> => {
+export const getCoverLettersForUser = async (req: CustomRequest, res: Response): Promise<void> => {
     if (!req.user || !req.user.uid) {
         res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
         return;

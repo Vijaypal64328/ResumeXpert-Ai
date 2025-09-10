@@ -1,16 +1,16 @@
 
 import { Router } from 'express';
 import { generateCoverLetterController, getCoverLettersForUser, deleteCoverLetter } from '../controllers/coverLetter.controller';
-import { authenticateToken } from '../middleware/auth.middleware';
+import { requireAuth } from '../middleware/auth.middleware';
 
 const router = Router();
 // DELETE /api/cover-letter/:id - Delete a cover letter
-router.delete('/:id', authenticateToken, deleteCoverLetter);
+router.delete('/:id', requireAuth, deleteCoverLetter);
 
 // GET /api/cover-letter - Get all cover letters for the authenticated user
-router.get('/', authenticateToken, getCoverLettersForUser);
+router.get('/', requireAuth, getCoverLettersForUser);
 
 // POST /api/cover-letter/generate - Generate a cover letter
-router.post('/generate', authenticateToken, generateCoverLetterController);
+router.post('/generate', requireAuth, generateCoverLetterController);
 
 export default router;

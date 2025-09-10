@@ -1,4 +1,6 @@
 import express, { Express, Request, Response } from 'express';
+import http from 'http';
+import https from 'https';
 import dotenv from 'dotenv';
 import cors from 'cors';
 // Firebase admin import might not be needed here anymore if init is handled elsewhere
@@ -57,10 +59,53 @@ app.get('/', (req: Request, res: Response) => {
     res.send('AI Resume Pro Backend is running!');
 });
 
+// Lightweight health endpoint for uptime checks
+app.get('/api/health', (req: Request, res: Response) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
+
 // Start the server only if running directly (not imported as a module)
 if (require.main === module) {
     app.listen(port, () => {
         console.log(`[server]: Server is running at http://localhost:${port}`);
+
+    // Keep-alive self ping:
+    // Enabled by default (no env needed) with a sensible health URL and interval.
+    // You can still override via env: KEEP_ALIVE, KEEP_ALIVE_URL, KEEP_ALIVE_INTERVAL_MS
+    const keepAliveEnabled = String(process.env.KEEP_ALIVE ?? 'true').toLowerCase() === 'true';
+    const keepAliveUrl = process.env.KEEP_ALIVE_URL ?? 'https://resumexpert-ai-backend.onrender.com/api/health';
+    const intervalMs = Number(process.env.KEEP_ALIVE_INTERVAL_MS ?? 10 * 60 * 1000); // default 10m
+
+        const safePing = (url: string) => {
+            try {
+                const client = url.startsWith('https') ? https : http;
+                const req = client.get(url, (res) => {
+                    // drain and ignore body
+                    res.resume();
+                });
+                req.on('error', (err) => {
+                    console.warn('[keep-alive] ping failed:', (err as any)?.message || err);
+                });
+            } catch (err) {
+                console.warn('[keep-alive] ping error:', (err as any)?.message || err);
+            }
+        };
+
+        if (keepAliveEnabled && keepAliveUrl) {
+            const humanInterval = intervalMs >= 60_000
+                ? `${Math.round(intervalMs/60_000)}m`
+                : `${Math.round(intervalMs/1000)}s`;
+            console.log(`[keep-alive]: enabled — pinging ${keepAliveUrl} every ${humanInterval}`);
+            // immediate first ping, then interval
+            safePing(keepAliveUrl);
+            setInterval(() => safePing(keepAliveUrl), intervalMs);
+        } else {
+            console.log('[keep-alive]: disabled (set KEEP_ALIVE=true and KEEP_ALIVE_URL to enable)');
+        }
     });
 }
 
