@@ -5,7 +5,7 @@ import { db } from '../config/firebase.config';
 // Get dashboard stats for the current user
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user?.uid;
+    const userId = req.user?.uid;
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
       return;

@@ -24,9 +24,7 @@ interface AnalysisResult {
     // Add other properties as they become clear from AI response structure
 }
 
-interface CustomRequest extends Request {
-    user?: admin.auth.DecodedIdToken;
-}
+
 
 // const db = admin.firestore(); // Removed: Use imported db
 
@@ -38,7 +36,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); //
 // suggestJobDescription removed: resume-based suggestion was removed to simplify flows.
 // Use `suggestJobTypeDescription` (role+location) from AI controller for concise suggestions.
 
-export const matchResumeToJob = async (req: CustomRequest, res: Response): Promise<void> => {
+export const matchResumeToJob = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });

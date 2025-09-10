@@ -17,7 +17,16 @@ router.get(
 router.post(
     '/upload',
     authenticateToken, // Ensure user is authenticated and req.user is set
-    upload.single('resumeFile'), // Handle single file upload named 'resumeFile'
+    (req, res, next) => {
+        upload.single('resumeFile')(req, res, (err: any) => {
+            if (err) {
+                // Multer error (e.g., invalid file type or too large)
+                const msg = typeof err?.message === 'string' ? err.message : 'Invalid file upload';
+                return res.status(400).json({ message: msg });
+            }
+            next();
+        });
+    },
     uploadResume // Process the uploaded file
 );
 

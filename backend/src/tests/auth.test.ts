@@ -1,47 +1,31 @@
 import request from 'supertest';
 import express from 'express';
-import * as admin from 'firebase-admin';
 
-interface FirebaseAuthError extends Error {
-    code?: string;
-}
-
-// --- Mock firebase-admin --- 
+// --- Consolidated firebase-admin mock (before importing app) ---
 const mockCreateUser = jest.fn();
 const mockSet = jest.fn();
 const mockDoc = jest.fn(() => ({ set: mockSet }));
 const mockCollection = jest.fn(() => ({ doc: mockDoc }));
 const mockServerTimestamp = jest.fn(() => Date.now());
 
-// Mock the function call admin.firestore()
-const mockFirestoreInstance = {
-    collection: mockCollection,
-};
-
 // Attach static properties like FieldValue to the function mock itself
 interface FirestoreMock extends jest.Mock {
-    FieldValue?: {
-        serverTimestamp: () => number;
-    };
+    FieldValue?: { serverTimestamp: () => number };
 }
 
-const firestoreMockFn: FirestoreMock = jest.fn(() => mockFirestoreInstance);
-firestoreMockFn.FieldValue = {
-    serverTimestamp: mockServerTimestamp
-};
+const firestoreMockFn: FirestoreMock = jest.fn(() => ({
+    collection: mockCollection,
+})) as any;
+firestoreMockFn.FieldValue = { serverTimestamp: mockServerTimestamp };
 
 jest.mock('firebase-admin', () => ({
     initializeApp: jest.fn(),
-    credential: {
-        cert: jest.fn(),
-    },
+    credential: { cert: jest.fn() },
     // Use the mock function (with properties attached) for firestore
     firestore: firestoreMockFn,
-    auth: jest.fn(() => ({
-        createUser: mockCreateUser,
-    }))
+    auth: jest.fn(() => ({ createUser: mockCreateUser })),
 }));
-// ------------------------
+// ---------------------------------------------------------------
 
 // Import the app after mocking
 import app from '../server';
@@ -58,13 +42,12 @@ describe('POST /api/auth/signup', () => {
     // Clear mocks before each test
     beforeEach(() => {
         jest.clearAllMocks();
-        // Also clear the mock function calls history if needed, e.g.:
         mockCreateUser.mockClear();
         mockSet.mockClear();
         mockDoc.mockClear();
         mockCollection.mockClear();
         mockServerTimestamp.mockClear();
-        firestoreMockFn.mockClear();
+        (firestoreMockFn as jest.Mock).mockClear();
     });
 
     const userData = {
@@ -128,7 +111,7 @@ describe('POST /api/auth/signup', () => {
     });
 
     it('should return 409 if email already exists', async () => {
-        const emailExistsError: FirebaseAuthError = new Error('Email already exists.');
+        const emailExistsError: any = new Error('Email already exists.');
         emailExistsError.code = 'auth/email-already-exists';
         mockCreateUser.mockRejectedValue(emailExistsError);
         const response = await request(app).post('/api/auth/signup').send(userData);

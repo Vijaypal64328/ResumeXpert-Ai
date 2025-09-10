@@ -1,42 +1,38 @@
 import request from 'supertest';
 import path from 'path';
 import fs from 'fs';
-import app from '../server'; // Import the Express app
-import admin from 'firebase-admin'; // Import to access mocked types if needed
-import pdfParse from 'pdf-parse'; // Import to access mocked types if needed
-import mammoth from 'mammoth'; // Import to access mocked types if needed
-import { authenticateToken } from '../middleware/auth.middleware'; // Import to mock
 
-// --- Mock Dependencies ---
+// --- Mock Dependencies FIRST (before importing app) ---
 
-// Mock firebase-admin (Firestore)
+// Mock firebase-admin (Firestore) with FieldValue on the firestore function (static),
+// matching usage of admin.firestore.FieldValue in controllers.
 const mockAdd = jest.fn();
 const mockCollection = jest.fn(() => ({ add: mockAdd }));
+
+interface FirestoreMock extends jest.Mock {
+    FieldValue?: { serverTimestamp: () => Date };
+}
+
+const firestoreMockFn: FirestoreMock = jest.fn(() => ({
+    collection: mockCollection,
+})) as any;
+firestoreMockFn.FieldValue = { serverTimestamp: jest.fn(() => new Date()) };
+
 jest.mock('firebase-admin', () => {
     const actualFirebase = jest.requireActual('firebase-admin');
     return {
-        // Keep actual credential/initializeApp for structure but mock implementations
         initializeApp: jest.fn(),
         credential: actualFirebase.credential,
-        // Mock only firestore parts used by this controller
-        firestore: jest.fn(() => ({
-            collection: mockCollection,
-            // Mock FieldValue static properties if needed (already done in auth.test.ts mock, but repeat for clarity)
-            FieldValue: { serverTimestamp: jest.fn(() => new Date()) }
-        })),
-        // Mock auth only if needed by middleware/controllers called here (shouldn't be directly)
-        auth: jest.fn(() => ({}))
+        firestore: firestoreMockFn,
+        auth: jest.fn(() => ({})),
     };
 });
 
 // Mock middleware/auth.middleware
-// This replaces the actual authenticateToken function for all tests in this file
 jest.mock('../middleware/auth.middleware', () => ({
     authenticateToken: jest.fn((req, res, next) => {
-        // Simulate successful authentication by default
-        // Attach a mock user object to the request
         req.user = { uid: 'test-user-id-456', email: 'authed@example.com' };
-        next(); // Call next middleware/handler
+        next();
     })
 }));
 
@@ -46,9 +42,11 @@ jest.mock('pdf-parse', () => mockPdfParse);
 
 // Mock mammoth
 const mockMammothExtract = jest.fn();
-jest.mock('mammoth', () => ({
-    extractRawText: mockMammothExtract
-}));
+jest.mock('mammoth', () => ({ extractRawText: mockMammothExtract }));
+
+// Now import items that rely on the mocks
+import app from '../server';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 // --- Test Suite ---
 
@@ -63,7 +61,7 @@ describe('POST /api/resumes/upload', () => {
             req.user = { uid: 'test-user-id-456', email: 'authed@example.com' };
             next();
         });
-        mockPdfParse.mockResolvedValue({ text: 'Parsed PDF Text Content' });
+    mockPdfParse.mockResolvedValue({ text: 'Parsed PDF Text Content' } as any);
         mockMammothExtract.mockResolvedValue({ value: 'Parsed DOCX Text Content' });
         mockAdd.mockResolvedValue({ id: 'new-resume-doc-id' }); // Simulate successful Firestore add
     });
