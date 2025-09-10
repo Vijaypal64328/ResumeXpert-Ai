@@ -15,9 +15,11 @@
         ] /* Added src/types for custom declarations */
     },
     "include": [
-        "src/**/*"
+        "src/**/*.ts",
+        "src/**/*.d.ts"
     ], /* Specifies which files to include in compilation */
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "src/tests/**"
     ] /* Specifies which files to exclude */
 }
