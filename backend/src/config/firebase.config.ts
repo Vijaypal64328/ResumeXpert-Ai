@@ -17,16 +17,43 @@ try {
     if (!isTest) {
         // In non-test environments, require credentials
         const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
-        const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-        if (!serviceAccountPath && !serviceAccountBase64) {
+        if (!serviceAccountPath && !serviceAccountEnv) {
             throw new Error('No Firebase service account credentials found. Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_KEY');
         }
 
-    const apps = (admin as any).apps || [];
-    if (apps.length === 0) {
-            if (serviceAccountBase64) {
-                const serviceAccount = JSON.parse(Buffer.from(serviceAccountBase64, 'base64').toString());
+        // Helper to robustly parse service account from env
+        const parseServiceAccountFromEnv = (val: string) => {
+            const candidates: string[] = [];
+            try {
+                const decoded = Buffer.from(val, 'base64').toString('utf8');
+                if (decoded) candidates.push(decoded);
+            } catch {
+                // not base64; ignore
+            }
+            candidates.push(val);
+            // add de-quoted variants
+            const strip = (s: string) => s.trim().replace(/^['"]+|['"]+$/g, '');
+            const withStripped = candidates.map(strip);
+            for (const cand of [...candidates, ...withStripped]) {
+                try {
+                    const obj = JSON.parse(cand);
+                    if (obj && typeof obj === 'object' && typeof obj.private_key === 'string') {
+                        obj.private_key = obj.private_key.replace(/\\n/g, '\n');
+                    }
+                    return obj;
+                } catch {
+                    // try next
+                }
+            }
+            throw new Error("Invalid FIREBASE_SERVICE_ACCOUNT_KEY: provide base64-encoded JSON or raw JSON without extra quotes.");
+        };
+
+        const apps = (admin as any).apps || [];
+        if (apps.length === 0) {
+            if (serviceAccountEnv) {
+                const serviceAccount = parseServiceAccountFromEnv(serviceAccountEnv);
                 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
             } else {
                 const resolvedPath = path.resolve(serviceAccountPath!);
@@ -38,8 +65,8 @@ try {
         }
     } else {
         // In test environment, rely on jest mocks for firebase-admin; don't require real credentials
-    const apps = (admin as any).apps || [];
-    if (apps.length === 0) {
+        const apps = (admin as any).apps || [];
+        if (apps.length === 0) {
             try {
                 admin.initializeApp({} as any);
             } catch {
