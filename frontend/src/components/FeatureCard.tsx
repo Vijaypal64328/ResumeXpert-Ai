@@ -6,11 +6,12 @@ interface FeatureCardProps {
   icon: ReactNode;
   title: string;
   description: string;
+  className?: string;
 }
 
-export function FeatureCard({ icon, title, description }: FeatureCardProps) {
+export function FeatureCard({ icon, title, description, className }: FeatureCardProps) {
   return (
-    <Card className="card-hover border-t-4 border-t-theme-blue">
+    <Card className={`card-hover border-t-4 border-t-theme-blue ${className ?? ''}`}>
       <CardHeader className="pb-2">
         <div className="mb-4 text-theme-blue w-12 h-12 flex items-center justify-center rounded-full bg-blue-50">
           {icon}

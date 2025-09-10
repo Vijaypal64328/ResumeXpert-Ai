@@ -36,7 +36,7 @@ export function SignInPromptModal({ isOpen, onClose }: SignInPromptModalProps) {
         </Button>
         <h2 className="text-2xl font-bold text-slate-800 mb-4">Sign In Required</h2>
         <p className="text-slate-600 mb-6">
-          To access this feature, please sign in or create an account. Resume Analyzer is available without signing in.
+          To access this feature, please sign in or create an account.
         </p>
         <div className="flex flex-col space-y-3">
           <Button onClick={handleLoginClick} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full">

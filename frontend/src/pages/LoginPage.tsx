@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Quote } from 'lucide-react';
+import { LogIn, Quote, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -14,6 +14,7 @@ const LoginPage: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuth();
     const [redirectPath, setRedirectPath] = useState('/dashboard');
@@ -84,16 +85,28 @@ const LoginPage: React.FC = () => {
                             </div>
                             <div>
                                 <Label htmlFor="login-password">Password</Label>
-                                <Input
-                                    id="login-password"
-                                    type="password"
-                                    placeholder="Enter your password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="mt-1"
-                                    disabled={isLoading}
-                                />
+                                <div className="relative mt-1">
+                                    <Input
+                                        id="login-password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="Enter your password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="pr-10"
+                                        disabled={isLoading}
+                                    />
+                                    <button
+                                        type="button"
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        onClick={() => setShowPassword((s) => !s)}
+                                        className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-gray-700"
+                                        disabled={isLoading}
+                                        tabIndex={-1}
+                                    >
+                                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
+                                </div>
                             </div>
                             <Button
                                 type="submit"
@@ -137,19 +150,18 @@ const LoginPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-theme-blue to-theme-purple items-center justify-center p-12 text-white flex-col relative overflow-hidden">
-                    <div className="absolute inset-0 bg-opacity-10 bg-white backdrop-blur-sm"></div>
-                    <div className="relative z-10 text-center space-y-6">
-                        <Quote className="h-12 w-12 text-cyan-300 mx-auto" strokeWidth={1.5} />
-                        <h2 className="text-4xl md:text-5xl font-bold leading-tight">
-                            Craft Your Future.
-                        </h2>
-                        <p className="text-xl font-light text-blue-100 max-w-md mx-auto">
-                            "Leverage AI to build a resume that stands out and matches you with the perfect job."
-                        </p>
-                        <div className="pt-4">
-                            <p className="font-semibold">ResumeXpert pro</p>
-                            <p className="text-sm text-blue-200">Your Career Advancement Partner</p>
+                <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-sky-500 via-sky-300 to-sky-200 items-center justify-center p-12 text-white flex-col">
+                    <div className="text-center space-y-6">
+                            <Quote className="h-12 w-12 text-white mx-auto" strokeWidth={1.5} />
+                            <h2 className="text-4xl md:text-5xl font-bold leading-tight text-white">
+                                Craft Your Future.
+                            </h2>
+                            <p className="text-xl font-light text-white/90 max-w-md mx-auto">
+                                "Leverage AI to build a resume that stands out and matches you with the perfect job."
+                            </p>
+                            <div className="pt-4">
+                                <p className="font-semibold text-white">ResumeXpert pro</p>
+                                <p className="text-sm text-white/80">Your Career Advancement Partner</p>
                         </div>
                     </div>
                 </div>

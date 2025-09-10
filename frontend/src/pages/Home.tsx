@@ -58,20 +58,10 @@ const Home = () => {
           <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-blue-100 opacity-60 blur-3xl animate-pulse"></div>
           
           {/* Animated dots */}
-          {/* Decorative floating dots for extra flair */}
+          {/* Decorative floating dots for extra flair (class-based to satisfy linter) */}
           <div className="hidden lg:block">
-            {[...Array(6)].map((_, i) => (
-              <div 
-                key={i}
-                className="absolute rounded-full bg-blue-400 opacity-10 animate-bounce"
-                style={{
-                  width: `${8 + i * 2}px`,
-                  height: `${8 + i * 2}px`,
-                  top: `${20 + i * 10}%`,
-                  right: `${10 + i * 8}%`,
-                  animationDelay: `${i * 0.7}s`
-                }}
-              ></div>
+            {[0,1,2,3,4,5].map((i) => (
+              <div key={i} className={`animated-dot dot-${i}`}></div>
             ))}
           </div>
         </div>
@@ -252,11 +242,12 @@ const Home = () => {
           <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-slate-900 mb-12 tracking-tight">Features</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* AI Powered Resume Builder (primary) */}
-            <div>
+      <div className="reveal fade-bottom delay-200">
               <FeatureCard
                 icon={<Cpu className="text-3xl text-blue-500" />}
                 title="AI Powered Resume Builder"
                 description="Create a tailored resume quickly using AI-driven templates and smart suggestions."
+        className="hover:-translate-y-1 transition-transform duration-300"
               />
               <div className="mt-4 flex justify-center">
                 <Button onClick={() => navigate('/dashboard/builder')} className="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700">
@@ -266,11 +257,12 @@ const Home = () => {
             </div>
 
             {/* AI Resume Analysis */}
-            <div>
+      <div className="reveal fade-bottom delay-300">
               <FeatureCard
                 icon={<BarChart className="text-3xl text-purple-500" />}
                 title="AI Resume Analysis"
                 description="Get instant, actionable feedback on your resume for a specific job role, with scores and category suggestions."
+        className="hover:-translate-y-1 transition-transform duration-300"
               />
               <div className="mt-4 flex justify-center">
                 <Button onClick={() => navigate('/dashboard/analyze')} variant="outline" className="px-4 py-2 rounded-full">
@@ -280,11 +272,12 @@ const Home = () => {
             </div>
 
             {/* Find Jobs */}
-            <div>
+      <div className="reveal fade-bottom delay-400">
               <FeatureCard
                 icon={<Briefcase className="text-3xl text-pink-500" />}
                 title="Find Jobs"
                 description="Search and match to real job postings based on your resume and targeted roles."
+        className="hover:-translate-y-1 transition-transform duration-300"
               />
               <div className="mt-4 flex justify-center">
                 <Button onClick={() => navigate('/dashboard/find-job')} className="px-4 py-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-700">
@@ -295,16 +288,19 @@ const Home = () => {
 
             {/* Other features */}
             <FeatureCard
+              className="reveal fade-bottom delay-500 hover:-translate-y-1 transition-transform duration-300"
               icon={<span className="text-3xl text-green-500">📊</span>}
               title="Resume Score"
               description="See how your resume scores and track improvements over time."
             />
             <FeatureCard
+              className="reveal fade-bottom delay-600 hover:-translate-y-1 transition-transform duration-300"
               icon={<span className="text-3xl text-purple-500">�</span>}
               title="Keyword Optimization"
               description="Optimize your resume for ATS and recruiter searches with smart keyword suggestions."
             />
             <FeatureCard
+              className="reveal fade-bottom delay-700 hover:-translate-y-1 transition-transform duration-300"
               icon={<span className="text-3xl text-yellow-500">🔒</span>}
               title="Secure & Private"
               description="Your data is encrypted and never shared. Privacy is our top priority."
@@ -481,6 +477,7 @@ const Home = () => {
         .delay-300 {
           transition-delay: 0.3s;
         }
+  .delay-200 { transition-delay: 0.2s; }
         
         .delay-500 {
           transition-delay: 0.5s;
@@ -489,6 +486,8 @@ const Home = () => {
         .delay-700 {
           transition-delay: 0.7s;
         }
+  .delay-400 { transition-delay: 0.4s; }
+  .delay-600 { transition-delay: 0.6s; }
         
         .animation-delay-1000 {
           animation-delay: 1s;
@@ -506,6 +505,21 @@ const Home = () => {
         .animate-float {
           animation: float 4s ease-in-out infinite;
         }
+
+        /* Animated dots (replaces inline styles) */
+        .animated-dot {
+          position: absolute;
+          border-radius: 9999px;
+          background-color: rgb(96 165 250 / 1); /* sky-400 */
+          opacity: 0.10;
+          animation: bounce 2.2s infinite;
+        }
+        .dot-0 { width: 8px;  height: 8px;  top: 20%; right: 10%; animation-delay: 0s; }
+        .dot-1 { width: 10px; height: 10px; top: 30%; right: 18%; animation-delay: 0.7s; }
+        .dot-2 { width: 12px; height: 12px; top: 40%; right: 26%; animation-delay: 1.4s; }
+        .dot-3 { width: 14px; height: 14px; top: 50%; right: 34%; animation-delay: 2.1s; }
+        .dot-4 { width: 16px; height: 16px; top: 60%; right: 42%; animation-delay: 2.8s; }
+        .dot-5 { width: 18px; height: 18px; top: 70%; right: 50%; animation-delay: 3.5s; }
       `}</style>
       <SignInPromptModal isOpen={showSignInModal} onClose={() => setShowSignInModal(false)} />
     </div>
