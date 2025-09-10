@@ -23,26 +23,41 @@ try {
     // Check if already initialized
     if (admin.apps.length === 0) {
         if (serviceAccountRaw) {
-            // Allow raw JSON, base64-encoded JSON, and JSON with escaped newlines
+            // Allow raw JSON, base64-encoded JSON, possibly wrapped in quotes, and JSON with escaped newlines
             let jsonText = serviceAccountRaw.trim();
+
+            // Attempt base64 decode first; if it looks like JSON or a quoted JSON string, use it
             try {
-                // If it's base64, decode it; otherwise keep as-is
                 const maybeDecoded = Buffer.from(jsonText, 'base64').toString('utf8');
-                // Heuristic: decoded should start with '{' for JSON
-                if (maybeDecoded.trim().startsWith('{')) {
-                    jsonText = maybeDecoded;
+                const trimmed = maybeDecoded.trim();
+                if (trimmed.startsWith('{') || trimmed.startsWith('"') || trimmed.startsWith("'")) {
+                    jsonText = trimmed;
                 }
             } catch {
                 // ignore, treat as raw
             }
+
+            // Strip surrounding quotes if the whole payload is quoted
+            if ((jsonText.startsWith('"') && jsonText.endsWith('"')) || (jsonText.startsWith("'") && jsonText.endsWith("'"))) {
+                jsonText = jsonText.slice(1, -1);
+            }
+
             // Replace common escaped newline patterns
             jsonText = jsonText.replace(/\\n/g, '\n');
+
+            // Try parsing; if it parses to a string that looks like JSON, parse again
             let serviceAccount: any;
             try {
-                serviceAccount = JSON.parse(jsonText);
+                const firstParse = JSON.parse(jsonText);
+                if (typeof firstParse === 'string' && firstParse.trim().startsWith('{')) {
+                    serviceAccount = JSON.parse(firstParse);
+                } else {
+                    serviceAccount = firstParse;
+                }
             } catch (e) {
                 throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY JSON. Ensure it is valid JSON or base64 of JSON. Error: ${(e as Error).message}`);
             }
+
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount)
             });
