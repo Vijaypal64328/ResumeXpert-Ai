@@ -46,6 +46,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
+    "file-saver": "^2.0.5",
     "firebase": "^11.6.0",
     "framer-motion": "^12.11.0",
     "input-otp": "^1.2.4",
@@ -88,13 +89,13 @@
   "main": "eslint.config.js",
   "repository": {
     "type": "git",
-  "url": "git+https://github.com/sushil930/ResumeXpert.git"
+    "url": "git+https://github.com/sushil930/ResumeXpert.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-  "url": "https://github.com/sushil930/ResumeXpert/issues"
+    "url": "https://github.com/sushil930/ResumeXpert/issues"
   },
   "homepage": "https://github.com/sushil930/ResumeXpert#readme"
 }
