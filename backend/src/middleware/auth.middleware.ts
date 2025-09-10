@@ -1,9 +1,13 @@
 import { Request as ExpressRequest, Response, NextFunction } from 'express';
 import admin from 'firebase-admin';
 
+// Extend Express Request interface to include 'user' property
+interface CustomRequest extends ExpressRequest {
+    user?: admin.auth.DecodedIdToken;
+}
 
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const authHeader = (req.headers as any)['authorization'] as string | undefined;
+export const authenticateToken = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
+    const authHeader = req.headers.authorization;
     const token = authHeader?.split(' ')[1]; // Expecting "Bearer <token>"
 
     if (!token) {
@@ -13,7 +17,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 
     try {
         const decodedToken = await admin.auth().verifyIdToken(token);
-    (req as any).user = decodedToken; // Attach decoded user info to the request object
+        req.user = decodedToken; // Attach decoded user info to the request object
         console.log(`[auth]: User authenticated: ${decodedToken.uid}`);
         next(); // Proceed to the next middleware or route handler
     } catch (error: unknown) {
@@ -30,4 +34,4 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 }; 
 
 // Export authenticateToken as requireAuth for consistency across the codebase
-export const requireAuth = authenticateToken;
+export const requireAuth = authenticateToken; 
