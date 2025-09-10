@@ -14,17 +14,35 @@ try {
     
     // Try different service account key sources
     const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY; // can be base64 or raw JSON
 
-    if (!serviceAccountPath && !serviceAccountBase64) {
+    if (!serviceAccountPath && !serviceAccountRaw) {
         throw new Error('No Firebase service account credentials found. Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_KEY');
     }
 
     // Check if already initialized
     if (admin.apps.length === 0) {
-        if (serviceAccountBase64) {
-            // Use base64 encoded service account
-            const serviceAccount = JSON.parse(Buffer.from(serviceAccountBase64, 'base64').toString());
+        if (serviceAccountRaw) {
+            // Allow raw JSON, base64-encoded JSON, and JSON with escaped newlines
+            let jsonText = serviceAccountRaw.trim();
+            try {
+                // If it's base64, decode it; otherwise keep as-is
+                const maybeDecoded = Buffer.from(jsonText, 'base64').toString('utf8');
+                // Heuristic: decoded should start with '{' for JSON
+                if (maybeDecoded.trim().startsWith('{')) {
+                    jsonText = maybeDecoded;
+                }
+            } catch {
+                // ignore, treat as raw
+            }
+            // Replace common escaped newline patterns
+            jsonText = jsonText.replace(/\\n/g, '\n');
+            let serviceAccount: any;
+            try {
+                serviceAccount = JSON.parse(jsonText);
+            } catch (e) {
+                throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY JSON. Ensure it is valid JSON or base64 of JSON. Error: ${(e as Error).message}`);
+            }
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount)
             });
