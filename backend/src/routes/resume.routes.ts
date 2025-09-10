@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
 // Import controller and multer config
 import { uploadResume, analyzeResume, getUploadedResumes, downloadUploadedResume, deleteUploadedResume, getResumeById } from '../controllers/resume.controller';
@@ -17,7 +17,7 @@ router.get(
 router.post(
     '/upload',
     authenticateToken, // Ensure user is authenticated and req.user is set
-    (req, res, next) => {
+    (req: Request, res: Response, next: NextFunction) => {
         upload.single('resumeFile')(req, res, (err: any) => {
             if (err) {
                 // Multer error (e.g., invalid file type or too large)
