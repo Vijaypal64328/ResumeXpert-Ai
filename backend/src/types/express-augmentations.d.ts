@@ -1,9 +1,10 @@
 declare global {
   namespace Express {
     interface Request {
-      user?: any; // DecodedIdToken or custom payload assigned by auth middleware
-      file?: Express.Multer.File;
-      files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
+      user?: any;
+      // Use loose any types to avoid depending on @types/multer during prod builds
+      file?: any;
+      files?: any;
     }
   }
 }

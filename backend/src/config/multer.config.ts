@@ -1,4 +1,4 @@
-import multer, { FileFilterCallback } from 'multer';
+import multer from 'multer';
 import { Request } from 'express';
 
 // Define allowed mime types
@@ -8,7 +8,8 @@ const allowedMimeTypes = [
 ];
 
 // Configure file filter
-const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+// Use 'any' for file type to avoid strict dependency on @types/multer in production builds
+const fileFilter = (req: Request, file: any, cb: any) => {
     if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true); // Accept file
     } else {
