@@ -16,7 +16,7 @@ import {
   PlusCircle, // Added for the new button
   Cpu
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import apiClient, { getDashboardStats } from "@/lib/api"; // Corrected: Import default export
 
@@ -47,7 +47,7 @@ interface ResumeStrengthData {
 
 
 export default function DashboardHome() {
-  const { user } = useAuth();
+  const { user, token, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState<StatData[]>([]);
   // Recent activity removed to simplify UI
@@ -69,9 +69,14 @@ export default function DashboardHome() {
   }).format(currentDate);
 
 
-  // Simulate data fetching
-  useEffect(() => {
-    const fetchData = async () => {
+  // Data fetching
+  const fetchData = useCallback(async () => {
+    if (authLoading) return; // Wait until auth is ready
+    if (!user || !token) {
+      // Not authenticated; clear loading but don't fetch protected data
+      setIsLoading(false);
+      return;
+    }
       setIsLoading(true);
       // Fetch dashboard stats from backend
       try {
@@ -162,10 +167,19 @@ export default function DashboardHome() {
       ]);
       // recent activities removed; finish loading
       setIsLoading(false);
-    };
+  }, [authLoading, user, token]);
 
+  // Fetch when auth state becomes ready or changes
+  useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  // Refetch when window gains focus (user returns from other flows/pages)
+  useEffect(() => {
+    const onFocus = () => fetchData();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [fetchData]);
 
   // Quick actions (considered static configuration, not mock data to be removed)
   const quickActions = [
