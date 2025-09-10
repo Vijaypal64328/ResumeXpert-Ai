@@ -336,6 +336,15 @@ const AnalyzeResume = () => {
                     </div>
                   )}
                 </div>
+                {/* Helper tip shown between upload and role inputs */}
+                <div className="mt-4 p-3 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-start gap-2">
+                  <Lightbulb className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
+                  <p>
+                    <span className="font-semibold">Tip:</span> Write a 1–2 line role description that highlights core responsibilities,
+                    your top skills, and key tools. Example: "Build and ship React/TypeScript UIs, collaborate with designers,
+                    optimize performance; experience with REST APIs and testing."
+                  </p>
+                </div>
                 {/* Upload button moved below the role inputs (see further down) */}
                 {/* Role inputs + AI Suggest */}
                 <div className="mt-6">
@@ -505,8 +514,8 @@ const AnalyzeResume = () => {
     <CardContent className="pt-8 pb-10">
       <div className="flex flex-col md:flex-row items-center justify-center gap-8">
         <div className="flex gap-6 items-center">
-          {/* Role Match Score circle */}
-          <div className="relative">
+          {/* Role Match Score circle + role title stacked */}
+          <div className="flex flex-col items-center">
             <div className="w-44 h-44 relative">
               {/* Background circle */}
               <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -539,25 +548,26 @@ const AnalyzeResume = () => {
               </svg>
               {/* Score text in the center */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-4xl font-bold`} style={{ color: analysisResult.roleMatchScore > 80 ? '#22c55e' : analysisResult.roleMatchScore > 60 ? '#38bdf8' : analysisResult.roleMatchScore > 30 ? '#fbbf24' : '#ef4444' }}>
+                <span className={
+                  `text-4xl font-bold ${
+                    analysisResult.roleMatchScore > 80 ? 'text-green-500' :
+                    analysisResult.roleMatchScore > 60 ? 'text-sky-400' :
+                    analysisResult.roleMatchScore > 30 ? 'text-amber-400' :
+                    'text-red-500'
+                  }`
+                }>
                   {analysisResult.roleMatchScore}%
                 </span>
                 <span className="text-sm text-gray-500 mt-1">Role Match</span>
               </div>
-              {(analysisResult as any).roleTitle && (
-            <div className="mt-3 flex justify-center">
-              <span className="text-base font-medium text-gray-700">{(analysisResult as any).roleTitle}</span>
             </div>
-          )}
-          
-            </div>
+            {/* Role name directly below the circle; keep width aligned to circle (176px) */}
+            {(analysisResult as any).roleTitle && (
+              <p className="mt-3 text-base font-medium text-gray-700 text-center max-w-[176px] break-words whitespace-normal">
+                {(analysisResult as any).roleTitle}
+              </p>
+            )}
           </div>
-          {/* Role name below the circle, not inside */}
-          {/* {(analysisResult as any).roleTitle && (
-            <div className="mt-3 flex justify-center">
-              <span className="text-base font-medium text-gray-700">{(analysisResult as any).roleTitle}</span>
-            </div>
-          )} */}
         </div>
         {/* Score summary box, right-aligned, with role name */}
         <div className="w-full mb-8">

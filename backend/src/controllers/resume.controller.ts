@@ -389,13 +389,66 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
             }
             // Also extract from parsedText (for fuzzy match)
             const parsedText = (resumeData as any).parsedText || '';
-            resumeKeywords = resumeKeywords.concat(parsedText.toLowerCase().split(/[^a-zA-Z0-9+#.]+/g));
+            const resumeTextLower = parsedText.toLowerCase();
+            resumeKeywords = resumeKeywords.concat(resumeTextLower.split(/[^a-zA-Z0-9+#.]+/g));
             // Remove duplicates and short tokens
             resumeKeywords = Array.from(new Set(resumeKeywords.filter(k => k.length > 2)));
-            aiKeywords = Array.from(new Set(aiKeywords.map(k => k.toLowerCase()).filter(k => k.length > 2)));
-            // 3. Compute matching/missing
-            const matchingKeywords = aiKeywords.filter(jk => resumeKeywords.includes(jk));
-            const missingKeywords = aiKeywords.filter(jk => !resumeKeywords.includes(jk));
+            // Build helper sets for quick checks
+            const resumeTokenSet = new Set(resumeKeywords);
+            const stem = (t: string) => t.replace(/(ing|ed|ly|es|s)$/i, '');
+            const resumeStemSet = new Set(resumeKeywords.map(stem));
+
+            // Normalize AI keywords
+            aiKeywords = Array.from(new Set(aiKeywords.map(k => (k || '').toString().toLowerCase().trim()).filter(k => k.length > 2)));
+
+            // Small synonym map for common AI/ML terms (helps catch variants like sklearn/NLP)
+            const synonymMap: Record<string, string[]> = {
+                'scikit-learn': ['sklearn', 'scikit learn'],
+                'natural language processing': ['nlp', 'natural-language processing', 'natural-language-processing'],
+                'machine learning': ['machine-learning'],
+                'deep learning': ['deep-learning'],
+                'data preprocessing': ['data pre-processing', 'data pre processing'],
+                'model training': ['training models'],
+                'model evaluation': ['evaluate model', 'model validation']
+            };
+            const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const containsKeyword = (kw: string): boolean => {
+                const k = (kw || '').toLowerCase().trim();
+                if (!k) return false;
+                if (resumeTokenSet.has(k)) return true; // exact token match
+
+                // stem match for single words
+                if (!k.includes(' ') && resumeStemSet.has(stem(k))) return true;
+
+                // direct word/phrase boundary match in raw text
+                try {
+                    const re = new RegExp(`\\b${escapeRegex(k)}\\b`, 'i');
+                    if (re.test(resumeTextLower)) return true;
+                } catch { /* ignore bad regex */ }
+
+                // variations: replace hyphens with spaces
+                const noHyphen = k.replace(/-/g, ' ');
+                if (noHyphen !== k) {
+                    try {
+                        const re2 = new RegExp(`\\b${escapeRegex(noHyphen)}\\b`, 'i');
+                        if (re2.test(resumeTextLower)) return true;
+                    } catch { /* ignore */ }
+                }
+
+                // synonyms
+                const syns = synonymMap[k] || [];
+                for (const s of syns) {
+                    try {
+                        const reS = new RegExp(`\\b${escapeRegex(s)}\\b`, 'i');
+                        if (reS.test(resumeTextLower)) return true;
+                    } catch { /* ignore */ }
+                }
+                return false;
+            };
+
+            // 3. Compute matching/missing using robust checks
+            const matchingKeywords = aiKeywords.filter(containsKeyword);
+            const missingKeywords = aiKeywords.filter(jk => !containsKeyword(jk));
             (analysisResult as any).matchingKeywords = matchingKeywords;
             (analysisResult as any).missingKeywords = missingKeywords;
 

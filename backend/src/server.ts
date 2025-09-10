@@ -31,9 +31,36 @@ const app: Express = express();
 const port = process.env.PORT || 3001; // Default to 3001 if PORT not in .env
 
 // Middleware
+// CORS: allow CSV in CORS_ORIGIN, and in dev allow localhost by default
+const buildCorsOrigin = () => {
+    const csv = process.env.CORS_ORIGIN?.trim();
+    if (csv) {
+        const list = csv.split(',').map(o => o.trim()).filter(Boolean);
+        return (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            if (!origin) return callback(null, true); // non-browser or same-origin
+            if (list.includes(origin)) return callback(null, true);
+            return callback(new Error(`Not allowed by CORS: ${origin}`));
+        };
+    }
+    // default: in non-prod, allow localhost/127.0.0.1 on any port
+    if ((process.env.NODE_ENV || 'development') !== 'production') {
+        const localhostRegex = /^(https?:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/i;
+        return (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            if (!origin) return callback(null, true);
+            if (localhostRegex.test(origin)) return callback(null, true);
+            return callback(new Error(`Not allowed by CORS: ${origin}`));
+        };
+    }
+    // production fallback: deny unless explicitly configured
+    return (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin) return callback(null, true);
+        return callback(new Error('CORS origin not configured'));
+    };
+};
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN, // Allow requests from the frontend URL specified in .env
-    credentials: true, // Optional: If you need to send cookies or authorization headers
+    origin: buildCorsOrigin(),
+    credentials: true,
 }));
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bodies
